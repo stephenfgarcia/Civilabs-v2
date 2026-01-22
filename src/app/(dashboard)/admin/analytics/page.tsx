@@ -115,10 +115,10 @@ async function getAnalytics() {
     quizAttempts,
     forumActivity: forumThreads + forumReplies,
     topCourses,
-    topInstructors: topInstructors.map((i) => ({
+    topInstructors: topInstructors.map((i: typeof topInstructors[number]) => ({
       ...i,
       totalStudents: i.courses.reduce(
-        (acc, c) => acc + c._count.enrollments,
+        (acc: number, c: typeof i.courses[number]) => acc + c._count.enrollments,
         0
       ),
     })),
