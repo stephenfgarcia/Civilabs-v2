@@ -1,45 +1,12 @@
 import { db } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 
 export const dynamic = 'force-dynamic';
 
-// Type definitions for analytics data
-type TopCourse = Prisma.CourseGetPayload<{
-  include: {
-    instructor: { select: { name: true } };
-    _count: { select: { enrollments: true } };
-  };
-}>;
-
-type TopInstructor = {
-  id: string;
-  name: string | null;
-  image: string | null;
-  _count: { courses: number };
-  totalStudents: number;
-};
-
-type Category = Prisma.CategoryGetPayload<{
-  include: { _count: { select: { courses: true } } };
-}>;
-
-interface AnalyticsData {
-  totalUsers: number;
-  newUsers: number;
-  totalCourses: number;
-  publishedCourses: number;
-  totalEnrollments: number;
-  recentEnrollments: number;
-  totalCertificates: number;
-  recentCertificates: number;
-  completionRate: number;
-  quizPassRate: number;
-  quizAttempts: number;
-  forumActivity: number;
-  topCourses: TopCourse[];
-  topInstructors: TopInstructor[];
-  categories: Category[];
-}
+// Infer types from the getAnalytics function
+type Analytics = Awaited<ReturnType<typeof getAnalytics>>;
+type TopCourse = Analytics["topCourses"][number];
+type TopInstructor = Analytics["topInstructors"][number];
+type Category = Analytics["categories"][number];
 
 import {
   BarChart3,
@@ -55,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-async function getAnalytics(): Promise<AnalyticsData> {
+async function getAnalytics() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -316,7 +283,7 @@ export default async function AdminAnalyticsPage() {
                   No published courses yet
                 </p>
               ) : (
-                analytics.topCourses.map((course, index) => (
+                analytics.topCourses.map((course: TopCourse, index: number) => (
                   <div
                     key={course.id}
                     className="flex items-center gap-3"
@@ -355,7 +322,7 @@ export default async function AdminAnalyticsPage() {
                   No instructors yet
                 </p>
               ) : (
-                analytics.topInstructors.map((instructor, index) => (
+                analytics.topInstructors.map((instructor: TopInstructor, index: number) => (
                   <div
                     key={instructor.id}
                     className="flex items-center gap-3"
@@ -400,7 +367,7 @@ export default async function AdminAnalyticsPage() {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {analytics.categories.map((category) => (
+              {analytics.categories.map((category: Category) => (
                 <div
                   key={category.id}
                   className="p-4 rounded-lg border bg-muted/50"
