@@ -1,6 +1,46 @@
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = 'force-dynamic';
+
+// Type definitions for analytics data
+type TopCourse = Prisma.CourseGetPayload<{
+  include: {
+    instructor: { select: { name: true } };
+    _count: { select: { enrollments: true } };
+  };
+}>;
+
+type TopInstructor = {
+  id: string;
+  name: string | null;
+  image: string | null;
+  _count: { courses: number };
+  totalStudents: number;
+};
+
+type Category = Prisma.CategoryGetPayload<{
+  include: { _count: { select: { courses: true } } };
+}>;
+
+interface AnalyticsData {
+  totalUsers: number;
+  newUsers: number;
+  totalCourses: number;
+  publishedCourses: number;
+  totalEnrollments: number;
+  recentEnrollments: number;
+  totalCertificates: number;
+  recentCertificates: number;
+  completionRate: number;
+  quizPassRate: number;
+  quizAttempts: number;
+  forumActivity: number;
+  topCourses: TopCourse[];
+  topInstructors: TopInstructor[];
+  categories: Category[];
+}
+
 import {
   BarChart3,
   TrendingUp,
@@ -15,7 +55,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-async function getAnalytics() {
+async function getAnalytics(): Promise<AnalyticsData> {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -108,10 +148,10 @@ async function getAnalytics() {
     quizAttempts,
     forumActivity: forumThreads + forumReplies,
     topCourses,
-    topInstructors: topInstructors.map((i: typeof topInstructors[number]) => ({
+    topInstructors: topInstructors.map((i) => ({
       ...i,
       totalStudents: i.courses.reduce(
-        (acc: number, c: typeof i.courses[number]) => acc + c._count.enrollments,
+        (acc, c) => acc + c._count.enrollments,
         0
       ),
     })),
