@@ -300,6 +300,45 @@ export default function AdminReportsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Quick Export Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Quick CSV Export
+          </CardTitle>
+          <CardDescription>
+            Download complete data exports in CSV format
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { type: "users", label: "All Users", icon: Users },
+              { type: "enrollments", label: "All Enrollments", icon: GraduationCap },
+              { type: "courses", label: "All Courses", icon: BookOpen },
+              { type: "certificates", label: "All Certificates", icon: GraduationCap },
+              { type: "quiz-attempts", label: "Quiz Attempts", icon: ClipboardList },
+            ].map(({ type, label, icon: Icon }) => (
+              <Button
+                key={type}
+                variant="outline"
+                className="justify-start h-auto py-3"
+                onClick={() => {
+                  window.open(`/api/reports/export?type=${type}`, "_blank");
+                }}
+              >
+                <Icon className="h-4 w-4 mr-2 shrink-0" />
+                <span className="text-left">
+                  <span className="block text-sm font-medium">{label}</span>
+                  <span className="block text-xs text-muted-foreground">Export as CSV</span>
+                </span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
