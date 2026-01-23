@@ -422,10 +422,10 @@ flowchart TD
 
     L --> M{Ready to Publish?}
     M -->|No| I
-    M -->|Yes| N[POST /api/courses/{id}/publish]
+    M -->|Yes| N["POST /api/courses/{id}/publish"]
 
     N --> O{Validation}
-    O -->|Has chapters?| P{Has lessons?}
+    O -->|Has chapters| P{Has lessons?}
     O -->|No chapters| Q[Return Error]
     P -->|Yes| R[Set isPublished = true]
     P -->|No lessons| Q
@@ -566,11 +566,11 @@ stateDiagram-v2
 ```mermaid
 flowchart TD
     A[Student views Course] --> B{Already enrolled?}
-    B -->|Yes| C[Show "Continue Learning"]
-    B -->|No| D[Show "Enroll" button]
+    B -->|Yes| C["Show Continue Learning"]
+    B -->|No| D["Show Enroll button"]
 
     D --> E[Click Enroll]
-    E --> F[POST /api/enrollments]
+    E --> F["POST /api/enrollments"]
 
     F --> G{Course published?}
     G -->|No| H[Return 404]
@@ -662,8 +662,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Student: All lessons complete] --> B[Click "Generate Certificate"]
-    B --> C[POST /api/certificates]
+    A[Student: All lessons complete] --> B["Click Generate Certificate"]
+    B --> C["POST /api/certificates"]
 
     C --> D{Validation Checks}
     D --> E{User enrolled?}
@@ -821,12 +821,12 @@ flowchart TD
     I --> J{Action?}
 
     J -->|Change Role| K[Select New Role]
-    K --> L[PUT /api/admin/users/{id}]
+    K --> L["PUT /api/admin/users/{id}"]
     L --> M[Role Updated]
     M --> N[Audit Log Created]
 
     J -->|Delete User| O[Confirm Deletion]
-    O --> P[DELETE /api/admin/users/{id}]
+    O --> P["DELETE /api/admin/users/{id}"]
     P --> Q[User + Related Data Deleted]
     Q --> N
 
@@ -1613,7 +1613,7 @@ flowchart TD
     H --> C
 
     D -->|Delete| I[Confirm Delete]
-    I --> J[DELETE /api/media/{id}]
+    I --> J["DELETE /api/media/{id}"]
     J --> K[Remove from DB]
     K --> C
 
@@ -1636,30 +1636,30 @@ flowchart TD
 ```mermaid
 graph LR
     subgraph Frontend
-        Next["Next.js 14 (App Router)"]
+        Next["Next.js 14 - App Router"]
         React["React 18"]
         TW["Tailwind CSS"]
-        Shadcn["shadcn/ui"]
-        Three["Three.js / R3F"]
-        Pusher_JS["Pusher.js"]
+        Shadcn["shadcn-ui"]
+        Three["Three.js + R3F"]
+        PusherJS["Pusher.js"]
     end
 
     subgraph Backend
         NextAPI["Next.js API Routes"]
         NextAuth["NextAuth.js v5"]
-        Prisma_ORM["Prisma ORM"]
+        PrismaORM["Prisma ORM"]
         Zod["Zod Validation"]
         Bcrypt["bcryptjs"]
     end
 
     subgraph Infrastructure
-        Vercel_Host["Vercel (Hosting)"]
-        Neon_DB["Neon (PostgreSQL)"]
-        Upstash_Redis["Upstash (Redis)"]
-        Pusher_Srv["Pusher (WebSocket)"]
-        Resend_Email["Resend (Email)"]
-        UT["UploadThing (Files)"]
-        Sentry_Mon["Sentry (Monitoring)"]
+        VercelHost["Vercel - Hosting"]
+        NeonDB["Neon - PostgreSQL"]
+        UpstashRedis["Upstash - Redis"]
+        PusherSrv["Pusher - WebSocket"]
+        ResendEmail["Resend - Email"]
+        UT["UploadThing - Files"]
+        SentryMon["Sentry - Monitoring"]
     end
 
     Frontend --> Backend
