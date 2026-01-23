@@ -16,6 +16,9 @@ jest.mock("@/lib/db", () => ({
     lesson: {
       findUnique: jest.fn(),
     },
+    enrollment: {
+      findUnique: jest.fn(),
+    },
   },
 }));
 
@@ -184,13 +187,40 @@ describe("Notes API", () => {
       expect(response.status).toBe(404);
     });
 
+    it("returns 403 when not enrolled", async () => {
+      mockAuth.mockResolvedValue({
+        user: { id: "user-1", email: "test@test.com", role: "STUDENT" },
+        expires: "",
+      } as any);
+
+      (db.lesson.findUnique as jest.Mock).mockResolvedValue({
+        id: "lesson-1",
+        chapter: { courseId: "course-1" },
+      });
+      (db.enrollment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const req = createRequest("/api/notes", {
+        method: "POST",
+        body: JSON.stringify({ lessonId: "lesson-1", content: "My note" }),
+      });
+      const response = await POST(req);
+
+      expect(response.status).toBe(403);
+    });
+
     it("creates a note successfully", async () => {
       mockAuth.mockResolvedValue({
         user: { id: "user-1", email: "test@test.com", role: "STUDENT" },
         expires: "",
       } as any);
 
-      (db.lesson.findUnique as jest.Mock).mockResolvedValue({ id: "lesson-1" });
+      (db.lesson.findUnique as jest.Mock).mockResolvedValue({
+        id: "lesson-1",
+        chapter: { courseId: "course-1" },
+      });
+      (db.enrollment.findUnique as jest.Mock).mockResolvedValue({
+        id: "enrollment-1",
+      });
       (db.note.create as jest.Mock).mockResolvedValue({
         id: "note-1",
         userId: "user-1",
@@ -217,7 +247,13 @@ describe("Notes API", () => {
         expires: "",
       } as any);
 
-      (db.lesson.findUnique as jest.Mock).mockResolvedValue({ id: "lesson-1" });
+      (db.lesson.findUnique as jest.Mock).mockResolvedValue({
+        id: "lesson-1",
+        chapter: { courseId: "course-1" },
+      });
+      (db.enrollment.findUnique as jest.Mock).mockResolvedValue({
+        id: "enrollment-1",
+      });
       (db.note.create as jest.Mock).mockResolvedValue({
         id: "note-1",
         userId: "user-1",

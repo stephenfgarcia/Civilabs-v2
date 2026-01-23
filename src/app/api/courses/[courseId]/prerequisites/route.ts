@@ -81,12 +81,40 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     const { prerequisiteCourseIds } = validation.data;
 
-    // Prevent circular prerequisites
+    // Prevent direct self-reference
     if (prerequisiteCourseIds.includes(courseId)) {
       return NextResponse.json(
         { message: "A course cannot be its own prerequisite" },
         { status: 400 }
       );
+    }
+
+    // Prevent circular prerequisite chains (e.g., A→B→C→A)
+    for (const prereqId of prerequisiteCourseIds) {
+      const visited = new Set<string>();
+      const queue = [prereqId];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (current === courseId) {
+          return NextResponse.json(
+            { message: "Circular prerequisite dependency detected" },
+            { status: 400 }
+          );
+        }
+        if (visited.has(current)) continue;
+        visited.add(current);
+
+        const upstream = await db.coursePrerequisite.findMany({
+          where: { courseId: current },
+          select: { prerequisiteCourseId: true },
+        });
+        for (const u of upstream) {
+          if (!visited.has(u.prerequisiteCourseId)) {
+            queue.push(u.prerequisiteCourseId);
+          }
+        }
+      }
     }
 
     // Delete existing prerequisites and create new ones

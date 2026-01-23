@@ -80,9 +80,10 @@ export async function POST(req: NextRequest) {
 
     const { lessonId, note } = validation.data;
 
-    // Check if lesson exists
+    // Check if lesson exists and get course info
     const lesson = await db.lesson.findUnique({
       where: { id: lessonId },
+      include: { chapter: { select: { courseId: true } } },
     });
 
     if (!lesson) {
@@ -92,28 +93,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if bookmark already exists
-    const existing = await db.bookmark.findUnique({
+    // Verify user is enrolled in the course
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: lesson.chapter.courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json(
+        { message: "You must be enrolled in this course" },
+        { status: 403 }
+      );
+    }
+
+    // Upsert bookmark (create or update atomically)
+    const bookmark = await db.bookmark.upsert({
       where: {
         userId_lessonId: {
           userId: session.user.id,
           lessonId,
         },
       },
-    });
-
-    if (existing) {
-      // Update existing bookmark
-      const updated = await db.bookmark.update({
-        where: { id: existing.id },
-        data: { note },
-      });
-      return NextResponse.json(updated);
-    }
-
-    // Create new bookmark
-    const bookmark = await db.bookmark.create({
-      data: {
+      update: { note },
+      create: {
         userId: session.user.id,
         lessonId,
         note,

@@ -86,15 +86,33 @@ export async function POST(req: NextRequest) {
 
     const { lessonId, content, timestamp } = validation.data;
 
-    // Check if lesson exists
+    // Check if lesson exists and get course info
     const lesson = await db.lesson.findUnique({
       where: { id: lessonId },
+      include: { chapter: { select: { courseId: true } } },
     });
 
     if (!lesson) {
       return NextResponse.json(
         { message: "Lesson not found" },
         { status: 404 }
+      );
+    }
+
+    // Verify user is enrolled in the course
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId: lesson.chapter.courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json(
+        { message: "You must be enrolled in this course" },
+        { status: 403 }
       );
     }
 

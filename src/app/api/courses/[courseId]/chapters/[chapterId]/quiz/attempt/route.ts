@@ -44,14 +44,42 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const { answers, score, passed } = body;
+    const { answers } = body;
 
-    if (typeof score !== "number" || typeof passed !== "boolean") {
+    if (!answers || typeof answers !== "object") {
       return NextResponse.json(
         { message: "Invalid quiz submission" },
         { status: 400 }
       );
     }
+
+    // Fetch quiz questions for server-side score calculation
+    const questions = await db.question.findMany({
+      where: { quizId: quiz.id },
+      orderBy: { position: "asc" },
+    });
+
+    if (questions.length === 0) {
+      return NextResponse.json(
+        { message: "Quiz has no questions" },
+        { status: 400 }
+      );
+    }
+
+    // Calculate score server-side
+    let earnedPoints = 0;
+    let totalPoints = 0;
+
+    for (const question of questions) {
+      totalPoints += question.points;
+      const userAnswer = answers[question.id];
+      if (userAnswer !== undefined && userAnswer === question.correctAnswer) {
+        earnedPoints += question.points;
+      }
+    }
+
+    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+    const passed = score >= quiz.passingScore;
 
     // Get chapter info for the email
     const chapter = await db.chapter.findUnique({
@@ -99,10 +127,27 @@ export async function POST(request: Request, { params }: RouteParams) {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const session = await auth();
-    const { chapterId } = await params;
+    const { courseId, chapterId } = await params;
 
     if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Verify enrollment
+    const enrollment = await db.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId: session.user.id,
+          courseId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      return NextResponse.json(
+        { message: "You are not enrolled in this course" },
+        { status: 403 }
+      );
     }
 
     const quiz = await db.quiz.findUnique({

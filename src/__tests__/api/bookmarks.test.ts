@@ -14,9 +14,13 @@ jest.mock("@/lib/db", () => ({
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn(),
       deleteMany: jest.fn(),
     },
     lesson: {
+      findUnique: jest.fn(),
+    },
+    enrollment: {
       findUnique: jest.fn(),
     },
   },
@@ -150,15 +154,41 @@ describe("Bookmarks API", () => {
       expect(response.status).toBe(404);
     });
 
+    it("returns 403 when not enrolled", async () => {
+      mockAuth.mockResolvedValue({
+        user: { id: "user-1", email: "test@test.com", role: "STUDENT" },
+        expires: "",
+      } as any);
+
+      (db.lesson.findUnique as jest.Mock).mockResolvedValue({
+        id: "lesson-1",
+        chapter: { courseId: "course-1" },
+      });
+      (db.enrollment.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const req = createRequest("/api/bookmarks", {
+        method: "POST",
+        body: JSON.stringify({ lessonId: "lesson-1" }),
+      });
+      const response = await POST(req);
+
+      expect(response.status).toBe(403);
+    });
+
     it("creates a new bookmark", async () => {
       mockAuth.mockResolvedValue({
         user: { id: "user-1", email: "test@test.com", role: "STUDENT" },
         expires: "",
       } as any);
 
-      (db.lesson.findUnique as jest.Mock).mockResolvedValue({ id: "lesson-1" });
-      (db.bookmark.findUnique as jest.Mock).mockResolvedValue(null);
-      (db.bookmark.create as jest.Mock).mockResolvedValue({
+      (db.lesson.findUnique as jest.Mock).mockResolvedValue({
+        id: "lesson-1",
+        chapter: { courseId: "course-1" },
+      });
+      (db.enrollment.findUnique as jest.Mock).mockResolvedValue({
+        id: "enrollment-1",
+      });
+      (db.bookmark.upsert as jest.Mock).mockResolvedValue({
         id: "bookmark-1",
         userId: "user-1",
         lessonId: "lesson-1",
@@ -176,19 +206,20 @@ describe("Bookmarks API", () => {
       expect(data.id).toBe("bookmark-1");
     });
 
-    it("updates existing bookmark when it already exists", async () => {
+    it("upserts bookmark with note", async () => {
       mockAuth.mockResolvedValue({
         user: { id: "user-1", email: "test@test.com", role: "STUDENT" },
         expires: "",
       } as any);
 
-      (db.lesson.findUnique as jest.Mock).mockResolvedValue({ id: "lesson-1" });
-      (db.bookmark.findUnique as jest.Mock).mockResolvedValue({
-        id: "bookmark-1",
-        userId: "user-1",
-        lessonId: "lesson-1",
+      (db.lesson.findUnique as jest.Mock).mockResolvedValue({
+        id: "lesson-1",
+        chapter: { courseId: "course-1" },
       });
-      (db.bookmark.update as jest.Mock).mockResolvedValue({
+      (db.enrollment.findUnique as jest.Mock).mockResolvedValue({
+        id: "enrollment-1",
+      });
+      (db.bookmark.upsert as jest.Mock).mockResolvedValue({
         id: "bookmark-1",
         userId: "user-1",
         lessonId: "lesson-1",
@@ -202,7 +233,7 @@ describe("Bookmarks API", () => {
       const response = await POST(req);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(data.note).toBe("Updated note");
     });
   });

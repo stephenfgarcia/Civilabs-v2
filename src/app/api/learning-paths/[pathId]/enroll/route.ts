@@ -67,9 +67,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       },
     });
 
-    // Enroll in all courses in the learning path
+    // Enroll in all courses in the learning path (respecting prerequisites)
     const courseEnrollments = [];
+    const skippedCourses = [];
+
     for (const pathCourse of learningPath.courses) {
+      if (!pathCourse.course.isPublished) continue;
+
       const existingEnrollment = await db.enrollment.findUnique({
         where: {
           userId_courseId: {
@@ -79,22 +83,50 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         },
       });
 
-      if (!existingEnrollment && pathCourse.course.isPublished) {
-        const courseEnrollment = await db.enrollment.create({
-          data: {
+      if (existingEnrollment) continue;
+
+      // Check prerequisites for this course
+      const prerequisites = await db.coursePrerequisite.findMany({
+        where: { courseId: pathCourse.courseId },
+        select: { prerequisiteCourseId: true },
+      });
+
+      if (prerequisites.length > 0) {
+        const completedPrereqs = await db.enrollment.findMany({
+          where: {
             userId: session.user.id,
-            courseId: pathCourse.courseId,
+            courseId: { in: prerequisites.map((p) => p.prerequisiteCourseId) },
+            completedAt: { not: null },
           },
+          select: { courseId: true },
         });
-        courseEnrollments.push(courseEnrollment);
+
+        const completedIds = new Set(completedPrereqs.map((c) => c.courseId));
+        const unmet = prerequisites.filter(
+          (p) => !completedIds.has(p.prerequisiteCourseId)
+        );
+
+        if (unmet.length > 0) {
+          skippedCourses.push(pathCourse.courseId);
+          continue;
+        }
       }
+
+      const courseEnrollment = await db.enrollment.create({
+        data: {
+          userId: session.user.id,
+          courseId: pathCourse.courseId,
+        },
+      });
+      courseEnrollments.push(courseEnrollment);
     }
 
     return NextResponse.json(
       {
         enrollment,
         courseEnrollments,
-        message: `Enrolled in learning path and ${courseEnrollments.length} courses`,
+        skippedCourses,
+        message: `Enrolled in learning path and ${courseEnrollments.length} courses${skippedCourses.length > 0 ? ` (${skippedCourses.length} skipped due to unmet prerequisites)` : ""}`,
       },
       { status: 201 }
     );
