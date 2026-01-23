@@ -17,6 +17,9 @@ import {
   ImageIcon,
   FileSpreadsheet,
   ScrollText,
+  Bookmark,
+  StickyNote,
+  Route,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@prisma/client";
@@ -61,6 +64,26 @@ const studentRoutes = [
     href: "/courses",
   },
   {
+    label: "My Progress",
+    icon: BarChart3,
+    href: "/progress",
+  },
+  {
+    label: "Bookmarks",
+    icon: Bookmark,
+    href: "/bookmarks",
+  },
+  {
+    label: "My Notes",
+    icon: StickyNote,
+    href: "/notes",
+  },
+  {
+    label: "Learning Paths",
+    icon: Route,
+    href: "/learning-paths",
+  },
+  {
     label: "Forums",
     icon: MessagesSquare,
     href: "/forums",
@@ -97,6 +120,11 @@ const instructorRoutes = [
     label: "Media Library",
     icon: ImageIcon,
     href: "/instructor/media",
+  },
+  {
+    label: "Analytics",
+    icon: BarChart3,
+    href: "/instructor/analytics",
   },
   {
     label: "Browse Courses",

@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Lock,
   ArrowLeft,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EnrollButton } from "@/components/courses/enroll-button";
+import { CourseReviews } from "@/components/courses/course-reviews";
 import { CourseJsonLd, BreadcrumbJsonLd } from "@/components/seo/json-ld";
 
 interface CoursePageProps {
@@ -105,6 +107,16 @@ async function getCourse(courseId: string) {
         },
         orderBy: { position: "asc" },
       },
+      prerequisites: {
+        include: {
+          prerequisiteCourse: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      },
       _count: {
         select: {
           enrollments: true,
@@ -178,6 +190,24 @@ export default async function CoursePage({ params }: CoursePageProps) {
   const progressPercentage = totalLessons > 0
     ? Math.round((completedCount / totalLessons) * 100)
     : 0;
+
+  // Check prerequisite completion
+  const prerequisiteStatus = await Promise.all(
+    (course.prerequisites || []).map(async (prereq) => {
+      if (!session?.user) return { ...prereq, completed: false };
+      const enrollment = await db.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId: session.user.id,
+            courseId: prereq.prerequisiteCourseId,
+          },
+        },
+        select: { completedAt: true },
+      });
+      return { ...prereq, completed: !!enrollment?.completedAt };
+    })
+  );
+  const hasUnmetPrerequisites = prerequisiteStatus.some((p) => !p.completed);
 
   // Find first incomplete lesson for "Continue" button
   let firstIncompleteLessonId: string | null = null;
@@ -280,7 +310,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
             </CardHeader>
             <CardContent>
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
                   {course.instructor.image ? (
                     <img
                       src={course.instructor.image}
@@ -304,10 +334,54 @@ export default async function CoursePage({ params }: CoursePageProps) {
               </div>
             </CardContent>
           </Card>
+
+          {/* Reviews Section */}
+          <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+            <CourseReviews
+              courseId={courseId}
+              isEnrolled={isEnrolled}
+              userId={session?.user?.id}
+            />
+          </div>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Prerequisites Warning */}
+          {!isEnrolled && prerequisiteStatus.length > 0 && (
+            <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20 animate-fade-in-up">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Prerequisites Required</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Complete these courses first
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {prerequisiteStatus.map((prereq) => (
+                    <Link
+                      key={prereq.prerequisiteCourseId}
+                      href={`/courses/${prereq.prerequisiteCourse.id}`}
+                      className="flex items-center gap-2 text-sm p-2 rounded-md hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
+                    >
+                      {prereq.completed ? (
+                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      ) : (
+                        <Lock className="h-4 w-4 text-amber-600 shrink-0" />
+                      )}
+                      <span className={prereq.completed ? "line-through text-muted-foreground" : ""}>
+                        {prereq.prerequisiteCourse.title}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Enrollment Card */}
           <Card className="sticky top-6 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
             <CardContent className="pt-6">
@@ -414,11 +488,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
                             }`}
                           >
                             {isCompleted ? (
-                              <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                              <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                             ) : canAccess ? (
-                              <LessonIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <LessonIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                             ) : (
-                              <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
                             )}
                             <span className="flex-1 truncate">{lesson.title}</span>
                             {lesson.duration && (
@@ -433,7 +507,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
                       {/* Quiz */}
                       {chapter.quiz && (
                         <div className="flex items-center gap-3 px-6 py-3 text-sm bg-primary/5">
-                          <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
                           <span className="flex-1">Quiz: {chapter.quiz.title}</span>
                         </div>
                       )}

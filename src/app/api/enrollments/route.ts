@@ -135,6 +135,45 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check prerequisites
+    const prerequisites = await db.coursePrerequisite.findMany({
+      where: { courseId },
+      include: {
+        prerequisiteCourse: {
+          select: { id: true, title: true },
+        },
+      },
+    });
+
+    if (prerequisites.length > 0) {
+      const completedCourses = await db.enrollment.findMany({
+        where: {
+          userId: session.user.id,
+          courseId: { in: prerequisites.map((p) => p.prerequisiteCourseId) },
+          completedAt: { not: null },
+        },
+        select: { courseId: true },
+      });
+
+      const completedIds = new Set(completedCourses.map((c) => c.courseId));
+      const unmet = prerequisites.filter(
+        (p) => !completedIds.has(p.prerequisiteCourseId)
+      );
+
+      if (unmet.length > 0) {
+        return NextResponse.json(
+          {
+            message: "Prerequisites not met",
+            unmetPrerequisites: unmet.map((p) => ({
+              id: p.prerequisiteCourse.id,
+              title: p.prerequisiteCourse.title,
+            })),
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create enrollment
     const enrollment = await db.enrollment.create({
       data: {

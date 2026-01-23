@@ -71,6 +71,16 @@ async function getQuizAttempts(userId: string, quizIds: string[]) {
   return new Set(attempts.map((a) => a.quizId));
 }
 
+async function isLessonBookmarked(userId: string, lessonId: string) {
+  const bookmark = await db.bookmark.findUnique({
+    where: {
+      userId_lessonId: { userId, lessonId },
+    },
+    select: { id: true },
+  });
+  return !!bookmark;
+}
+
 export default async function LearnPage({ params, searchParams }: LearnPageProps) {
   const session = await auth();
   const { courseId } = await params;
@@ -136,6 +146,11 @@ export default async function LearnPage({ params, searchParams }: LearnPageProps
       ? allLessons[currentLessonIndex + 1]
       : null;
 
+  // Check if current lesson is bookmarked
+  const bookmarked = currentLesson
+    ? await isLessonBookmarked(session.user.id, currentLesson.id)
+    : false;
+
   return (
     <div className="flex h-[calc(100vh-4rem)] -mx-6 -my-6">
       {/* Sidebar */}
@@ -155,6 +170,7 @@ export default async function LearnPage({ params, searchParams }: LearnPageProps
             chapter={currentChapter}
             lesson={currentLesson}
             isCompleted={completedLessons.has(currentLesson.id)}
+            isBookmarked={bookmarked}
             previousLesson={previousLesson}
             nextLesson={nextLesson}
             quiz={currentChapter.quiz}

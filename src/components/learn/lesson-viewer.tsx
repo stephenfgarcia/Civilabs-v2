@@ -15,6 +15,8 @@ import {
   Type,
   ExternalLink,
 } from "lucide-react";
+import { BookmarkButton } from "@/components/learn/bookmark-button";
+import { NoteEditor } from "@/components/learn/note-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuizPlayer } from "@/components/learn/quiz-player";
@@ -64,6 +66,7 @@ interface LessonViewerProps {
   chapter: Chapter;
   lesson: Lesson;
   isCompleted: boolean;
+  isBookmarked: boolean;
   previousLesson: Lesson | null;
   nextLesson: Lesson | null;
   quiz: Quiz | null;
@@ -75,6 +78,7 @@ export function LessonViewer({
   chapter,
   lesson,
   isCompleted,
+  isBookmarked,
   previousLesson,
   nextLesson,
   quiz,
@@ -294,11 +298,19 @@ export function LessonViewer({
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="animate-fade-in">
-        <p className="text-sm text-muted-foreground mb-1">{chapter.title}</p>
-        <h1 className="text-2xl font-bold">{lesson.title}</h1>
-        {lesson.description && (
-          <p className="text-muted-foreground mt-2">{lesson.description}</p>
-        )}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">{chapter.title}</p>
+            <h1 className="text-2xl font-bold">{lesson.title}</h1>
+            {lesson.description && (
+              <p className="text-muted-foreground mt-2">{lesson.description}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <BookmarkButton lessonId={lesson.id} isBookmarked={isBookmarked} />
+            <NoteEditor lessonId={lesson.id} />
+          </div>
+        </div>
       </div>
 
       {/* Content */}
