@@ -376,6 +376,70 @@ export const batchTelemetrySchema = z.object({
   events: z.array(telemetryEventSchema).min(1).max(50),
 });
 
+// ==================== Phase 16 Schemas ====================
+
+// MFA
+export const mfaSetupSchema = z.object({
+  method: z.enum(["EMAIL_OTP"]).default("EMAIL_OTP"),
+});
+
+export const mfaVerifySchema = z.object({
+  code: z.string().length(6, "Code must be 6 digits").regex(/^\d{6}$/, "Code must be numeric"),
+});
+
+export const mfaEnforcementSchema = z.object({
+  requireMFA: z.boolean(),
+  roles: z.array(z.enum(["STUDENT", "INSTRUCTOR", "ADMIN"])).optional(),
+});
+
+// Course Approval
+export const courseApprovalSubmitSchema = z.object({
+  courseId: z.string().min(1),
+});
+
+export const courseApprovalReviewSchema = z.object({
+  action: z.enum(["APPROVE", "REJECT", "REQUEST_CHANGES"]),
+  comment: z.string().optional(),
+});
+
+// Email Campaigns
+export const emailCampaignSchema = z.object({
+  title: z.string().min(1).max(200),
+  subject: z.string().min(1).max(200),
+  content: z.string().min(1),
+  recipientFilter: z.object({
+    role: z.enum(["STUDENT", "INSTRUCTOR", "ADMIN"]).optional(),
+    courseId: z.string().optional(),
+    enrollmentStatus: z.enum(["ACTIVE", "COMPLETED"]).optional(),
+    inactiveDays: z.number().int().positive().optional(),
+    registeredAfter: z.string().datetime().optional(),
+  }),
+  scheduledFor: z.string().datetime().optional(),
+});
+
+export const emailCampaignUpdateSchema = emailCampaignSchema.partial();
+
+// Data Retention
+export const retentionPolicySchema = z.object({
+  dataType: z.enum(["USER_DATA", "ENROLLMENTS", "SUBMISSIONS", "TELEMETRY", "AUDIT_LOGS", "CHAT_MESSAGES", "FORUM_POSTS"]),
+  retentionDays: z.number().int().min(1).max(3650),
+  action: z.enum(["ARCHIVE", "ANONYMIZE", "DELETE"]).default("ARCHIVE"),
+  isActive: z.boolean().default(true),
+  description: z.string().optional(),
+});
+
+export const retentionPolicyUpdateSchema = retentionPolicySchema.partial().omit({ dataType: true });
+
+// Consent
+export const consentSchema = z.object({
+  consentType: z.enum(["DATA_PROCESSING", "ANALYTICS", "MARKETING"]),
+  granted: z.boolean(),
+});
+
+export const batchConsentSchema = z.object({
+  consents: z.array(consentSchema).min(1).max(10),
+});
+
 // Type exports
 export type GradeCategoryInput = z.infer<typeof gradeCategorySchema>;
 export type GradeItemInput = z.infer<typeof gradeItemSchema>;
@@ -387,3 +451,8 @@ export type AttendanceSessionInput = z.infer<typeof attendanceSessionSchema>;
 export type AttendanceRecordInput = z.infer<typeof attendanceRecordSchema>;
 export type CourseCloneInput = z.infer<typeof courseCloneSchema>;
 export type TelemetryEventInput = z.infer<typeof telemetryEventSchema>;
+export type MFAVerifyInput = z.infer<typeof mfaVerifySchema>;
+export type CourseApprovalReviewInput = z.infer<typeof courseApprovalReviewSchema>;
+export type EmailCampaignInput = z.infer<typeof emailCampaignSchema>;
+export type RetentionPolicyInput = z.infer<typeof retentionPolicySchema>;
+export type ConsentInput = z.infer<typeof consentSchema>;

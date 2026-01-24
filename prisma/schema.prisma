@@ -27,6 +27,8 @@ model User {
   role              UserRole  @default(STUDENT)
   bio               String?
   profileVisibility Boolean   @default(true) // true = public, false = private (student privacy)
+  mfaEnabled        Boolean   @default(false)
+  consentAcceptedAt DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -55,6 +57,8 @@ model User {
   announcements          Announcement[]
   attendanceRecords      AttendanceRecord[]
   activities             UserActivity[]
+  mfaConfig             MFAConfig?
+  consents              ConsentRecord[]
 
   @@index([role])
   @@index([createdAt])
@@ -148,6 +152,7 @@ model Course {
   releaseConditions  ReleaseCondition[]
   announcements      Announcement[]
   attendanceSessions AttendanceSession[]
+  approval           CourseApproval?
 
   @@index([instructorId])
   @@index([categoryId])
@@ -759,6 +764,10 @@ enum NotificationType {
   ASSIGNMENT_RETURNED // Assignment returned for revision
   ASSESSMENT_AVAILABLE // New assessment available
   MANUAL_GRADE_NEEDED // Essay/short-answer needs grading (instructor)
+  COURSE_APPROVED     // Course approved by admin
+  COURSE_REJECTED     // Course rejected by admin
+  COURSE_REVIEW_REQUESTED // Course submitted for admin review
+  MFA_ENABLED_NOTICE  // MFA has been enabled on account
 }
 
 model Notification {
@@ -979,6 +988,30 @@ enum AuditAction {
 
   // Course Cloning
   COURSE_CLONED
+
+  // MFA (Phase 16)
+  MFA_ENABLED
+  MFA_DISABLED
+  MFA_VERIFIED
+  MFA_FAILED
+
+  // Course Approval (Phase 16)
+  COURSE_SUBMITTED_FOR_REVIEW
+  COURSE_APPROVED
+  COURSE_REJECTED
+  COURSE_CHANGES_REQUESTED
+
+  // Email Campaigns (Phase 16)
+  CAMPAIGN_CREATED
+  CAMPAIGN_SENT
+
+  // Data Retention (Phase 16)
+  RETENTION_POLICY_CREATED
+  RETENTION_POLICY_EXECUTED
+  USER_DATA_EXPORTED
+  USER_DATA_DELETED
+  CONSENT_GRANTED
+  CONSENT_REVOKED
 
   // Admin Actions
   SETTINGS_CHANGED
@@ -1260,4 +1293,168 @@ model UserActivity {
   @@index([userId, courseId])
   @@index([eventType])
   @@map("user_activities")
+}
+
+// ==================== MFA (Phase 16) ====================
+
+enum MFAMethod {
+  EMAIL_OTP
+}
+
+model MFAConfig {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  method        MFAMethod @default(EMAIL_OTP)
+  isEnabled     Boolean   @default(false)
+  backupCodes   Json?     // Array of hashed backup codes [{hash, used}]
+  lastUsedAt    DateTime?
+  failedAttempts Int      @default(0)
+  lockedUntil   DateTime? // Lockout after too many failures
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mfa_configs")
+}
+
+model OTPToken {
+  id          String   @id @default(cuid())
+  userId      String
+  code        String   // Hashed 6-digit code
+  expiresAt   DateTime
+  usedAt      DateTime?
+  purpose     String   @default("MFA_LOGIN") // MFA_LOGIN, MFA_SETUP
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("otp_tokens")
+}
+
+// ==================== COURSE APPROVAL (Phase 16) ====================
+
+enum ApprovalStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+model CourseApproval {
+  id            String         @id @default(cuid())
+  courseId       String         @unique
+  status        ApprovalStatus @default(DRAFT)
+  submittedAt   DateTime?
+  reviewedBy    String?        // Admin user ID
+  reviewedAt    DateTime?
+  reviewComment String?        @db.Text
+  history       Json?          // Array of {status, by, at, comment}
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([submittedAt])
+  @@map("course_approvals")
+}
+
+// ==================== EMAIL CAMPAIGNS (Phase 16) ====================
+
+enum CampaignStatus {
+  DRAFT
+  SENDING
+  SENT
+  FAILED
+  SCHEDULED
+}
+
+model EmailCampaign {
+  id              String         @id @default(cuid())
+  title           String
+  subject         String
+  content         String         @db.Text // HTML content
+  recipientFilter Json           // { role, courseId, enrollmentStatus, inactiveDays, registeredAfter }
+  status          CampaignStatus @default(DRAFT)
+  sentAt          DateTime?
+  scheduledFor    DateTime?
+  sentBy          String         // Admin user ID
+  sentCount       Int            @default(0)
+  failedCount     Int            @default(0)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status])
+  @@index([sentBy])
+  @@index([scheduledFor])
+  @@map("email_campaigns")
+}
+
+// ==================== DATA RETENTION & COMPLIANCE (Phase 16) ====================
+
+enum RetentionAction {
+  ARCHIVE
+  ANONYMIZE
+  DELETE
+}
+
+enum DataType {
+  USER_DATA
+  ENROLLMENTS
+  SUBMISSIONS
+  TELEMETRY
+  AUDIT_LOGS
+  CHAT_MESSAGES
+  FORUM_POSTS
+}
+
+enum ConsentType {
+  DATA_PROCESSING
+  ANALYTICS
+  MARKETING
+}
+
+model RetentionPolicy {
+  id            String          @id @default(cuid())
+  dataType      DataType
+  retentionDays Int             // Days to retain before action
+  action        RetentionAction @default(ARCHIVE)
+  isActive      Boolean         @default(true)
+  lastExecutedAt DateTime?
+  description   String?
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([dataType])
+  @@map("retention_policies")
+}
+
+model ConsentRecord {
+  id            String      @id @default(cuid())
+  userId        String
+  consentType   ConsentType
+  granted       Boolean     @default(true)
+  grantedAt     DateTime    @default(now())
+  revokedAt     DateTime?
+  ipAddress     String?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, consentType])
+  @@index([userId])
+  @@index([consentType])
+  @@map("consent_records")
 }

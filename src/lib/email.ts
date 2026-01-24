@@ -7,7 +7,7 @@ const resend = process.env.RESEND_API_KEY
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@civilabsreview.com";
 const APP_NAME = "CiviLabs LMS";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 interface SendEmailParams {
   to: string;
@@ -248,4 +248,105 @@ export async function sendForumReplyEmail(
     subject: `New reply to "${threadTitle}"`,
     html,
   });
+}
+
+// ==================== Phase 16 Email Functions ====================
+
+export async function sendOTPEmail(to: string, code: string) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Verification Code</h1>
+      </div>
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px;">Your one-time verification code is:</p>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; border: 2px solid #3b82f6;">
+          <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1f2937;">${code}</span>
+        </div>
+        <p style="font-size: 14px; color: #666;">This code expires in 5 minutes. Do not share it with anyone.</p>
+        <p style="font-size: 12px; color: #9ca3af; margin-top: 24px;">If you did not request this code, please ignore this email or contact support.</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `${APP_NAME} - Your verification code: ${code}`,
+    html,
+  });
+}
+
+export async function sendApprovalNotification(
+  to: string,
+  courseName: string,
+  status: "APPROVED" | "REJECTED" | "CHANGES_REQUESTED",
+  comment?: string
+) {
+  const statusConfig = {
+    APPROVED: { title: "Course Approved!", gradient: "#10b981, #059669", message: "Your course has been approved and is ready to be published." },
+    REJECTED: { title: "Course Not Approved", gradient: "#ef4444, #dc2626", message: "Your course submission was not approved at this time." },
+    CHANGES_REQUESTED: { title: "Changes Requested", gradient: "#f59e0b, #d97706", message: "Your course requires some changes before it can be approved." },
+  };
+
+  const { title, gradient, message } = statusConfig[status];
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, ${gradient}); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">${title}</h1>
+      </div>
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px;">${message}</p>
+        <div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0;">
+          <p style="margin: 0; font-weight: 600; color: #1f2937;">${courseName}</p>
+        </div>
+        ${comment ? `<div style="background: white; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #6b7280;"><p style="margin: 0; font-size: 14px; color: #4a4a4a;"><strong>Reviewer Comment:</strong><br>${comment}</p></div>` : ""}
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${APP_URL}/instructor/courses" style="background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;">View Dashboard</a>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `${APP_NAME} - ${title}: ${courseName}`,
+    html,
+  });
+}
+
+export async function sendCampaignEmail(to: string, subject: string, content: string) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      ${content}
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+      <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+        Sent by ${APP_NAME}.
+        <a href="${APP_URL}/settings" style="color: #6b7280;">Manage preferences</a>
+      </p>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({ to, subject, html });
 }

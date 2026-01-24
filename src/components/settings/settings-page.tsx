@@ -7,6 +7,8 @@ import { PasswordForm } from "./password-form";
 import { NotificationForm } from "./notification-form";
 import { PrivacyForm } from "./privacy-form";
 import { PlatformForm } from "./platform-form";
+import { MFAForm } from "./mfa-form";
+import { ConsentForm } from "./consent-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ProfileData {
@@ -134,8 +136,14 @@ export function SettingsPage() {
         {/* Password - All roles */}
         <PasswordForm hasPassword={hasPassword} />
 
+        {/* MFA - All roles */}
+        <MFAForm />
+
         {/* Notifications - All roles */}
         {notifications && <NotificationForm initialPreferences={notifications} />}
+
+        {/* Privacy & Consent - All roles */}
+        <ConsentForm />
 
         {/* Privacy - Student only */}
         {userRole === "STUDENT" && (
