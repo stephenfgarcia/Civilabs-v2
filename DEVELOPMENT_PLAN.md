@@ -1,7 +1,7 @@
 # CiviLabs LMS - Development Plan & Progress Tracker
 
 > **Last Updated:** January 2026
-> **Overall Progress:** Phase 1-9, 11-18 Complete | Production Ready & Deployed
+> **Overall Progress:** Phase 1-9, 11-19 Complete | Production Ready & Deployed
 
 ---
 
@@ -462,16 +462,13 @@ Root Config Files:
 **Phase 18 — Analytics (COMPLETED):**
 - No new models (read-only visualization layer over existing data)
 
-**Phase 19 — Integrations:**
-- **SAMLConfig** - SAML/SSO configuration per organization
-- **Webhook** - Developer webhook subscriptions
-- **WebhookDelivery** - Webhook delivery logs and retries
-- **APIKey** - Developer API keys with permissions
-- **SCORMPackage** - Uploaded SCORM content packages
-- **SCORMData** - SCORM runtime data per student
-- **Competency** - Learning competency definitions (hierarchical)
-- **CompetencyMapping** - Competency-to-content relationships
-- **StudentCompetency** - Student mastery tracking per competency
+**Phase 19 — Integrations (COMPLETED — Webhooks & API Keys):**
+- **Webhook** - Developer webhook subscriptions with URL, events, HMAC secret
+- **WebhookDelivery** - Delivery logs with retry tracking (attempts, nextRetryAt, success)
+- **APIKey** - API keys with SHA-256 hash, resource-level permissions, expiry
+- **WebhookEvent** enum - 7 event types
+- **APIKeyPermission** enum - 5 resource permissions (COURSES, ENROLLMENTS, GRADES, USERS, ANALYTICS)
+- (Deferred: SAMLConfig, SCORMPackage, SCORMData, Competency, CompetencyMapping, StudentCompetency)
 
 ---
 
@@ -497,7 +494,7 @@ Root Config Files:
 | Phase 16           | Admin Core: Security & Compliance         | COMPLETED   | 100%  |
 | Phase 17           | Cross-Role: Calendar, Groups & Collab     | COMPLETED   | 100%  |
 | Phase 18           | Cross-Role: Advanced Analytics & Charts   | COMPLETED   | 100%  |
-| Phase 19           | Integrations: SSO, SCORM, Webhooks        | NOT STARTED | 0%    |
+| Phase 19           | Integrations: Webhooks & API Keys         | COMPLETED   | 100%  |
 | User Settings      | Profile, Password, Notifications, Privacy, Platform | COMPLETED | 100% |
 | Production Ready   | Error Tracking, Rate Limit         | COMPLETED   | 100%       |
 | Deployment         | Vercel, Domain, OAuth              | COMPLETED   | 100%       |
@@ -1308,11 +1305,11 @@ Before starting Phase 14, the following must be addressed:
 
 ## Phase 19: Integrations & Standards Compliance
 
-**Status: NOT STARTED**
+**Status: COMPLETED (Webhooks & API Keys only; SAML, SCORM, Competency deferred)**
 **Priority: MEDIUM**
 **Role Focus: ADMIN + SYSTEM**
 
-> **Scope:** Institutional integration features: SSO/SAML, developer webhooks/API keys, SCORM import, and competency-based education. Each sub-phase is independent and can be built in any order.
+> **Scope:** Developer integration features: webhooks for event-driven architecture and API keys for programmatic access. SAML/SSO, SCORM, and Competency-Based Education deferred to future phases.
 
 ### 19.1 SSO & SAML
 
@@ -1327,22 +1324,30 @@ Before starting Phase 14, the following must be addressed:
 | Just-in-Time Provisioning | [ ] | Medium | Auto-create user on first SAML login with mapped attributes |
 | Attribute Mapping UI | [ ] | Medium | Map SAML attributes → CiviLabs fields (name, email, role, department) |
 
-### 19.2 Webhooks & Developer API
+### 19.2 Webhooks & Developer API (COMPLETED)
 
 | Feature | Status | Priority | Description |
 |---------|--------|----------|-------------|
-| Webhook Model | [ ] | High | url, events (string[]), secret, userId, isActive, createdAt, description |
-| WebhookDelivery Model | [ ] | High | webhookId, eventType, payload (JSON), statusCode, responseBody, deliveredAt, attempts |
-| Webhook Events | [ ] | High | enrollment.created, enrollment.completed, assignment.submitted, grade.updated, course.published, assessment.attempted, user.created |
-| Webhook Delivery Engine | [ ] | High | HTTP POST with HMAC-SHA256 signed payload, 10s timeout |
-| Webhook Retry | [ ] | Medium | Exponential backoff: retry at 1m, 5m, 30m, 2h, 12h |
-| Webhook Management API | [ ] | High | CRUD + test delivery endpoint |
-| Webhook Admin UI | [ ] | High | Create/manage webhooks, view delivery logs with status |
-| APIKey Model | [ ] | High | keyHash, name, permissions (string[]), userId, expiresAt, lastUsedAt, isActive |
-| API Key Management | [ ] | High | Generate (show once), revoke, list keys |
-| API Key Auth Middleware | [ ] | High | Authenticate requests via `Authorization: Bearer <api_key>` header |
-| Per-Key Rate Limiting | [ ] | Medium | Configurable rate limits per API key |
-| API Documentation | [ ] | Medium | Auto-generated OpenAPI/Swagger docs page |
+| Webhook Model | [x] | High | url, events (WebhookEvent[]), secret, userId, isActive, createdAt, description |
+| WebhookDelivery Model | [x] | High | webhookId, event, payload (JSON), statusCode, responseBody, success, attempts, nextRetryAt |
+| Webhook Events | [x] | High | 7 events: enrollment.created/completed, assignment.submitted, grade.updated, course.published, assessment.attempted, user.created |
+| Webhook Delivery Engine | [x] | High | HTTP POST with HMAC-SHA256 signed payload, 10s timeout, fire-and-forget |
+| Webhook Retry | [x] | Medium | Vercel Cron (every 5 min) with exponential backoff: 1m, 5m, 30m, 2h, 12h |
+| Webhook Management API | [x] | High | CRUD + test delivery + toggle active/inactive |
+| Webhook Admin UI | [x] | High | Create/manage webhooks, view inline delivery logs, test button |
+| APIKey Model | [x] | High | keyHash (SHA-256), keyPrefix, name, permissions (APIKeyPermission[]), expiresAt, lastUsedAt |
+| API Key Management | [x] | High | Generate (show once), revoke (soft-delete), list keys |
+| API Key Auth Middleware | [x] | High | Bearer token auth with hash lookup, permission check, expiry validation |
+| Per-Key Rate Limiting | [x] | Medium | In-memory rate limiter: 60 req/min per key |
+| API Documentation | [-] | Medium | Deferred to future phase |
+
+### Key Files (Phase 19)
+- `src/lib/webhook-dispatcher.ts` — Event dispatcher + retry logic
+- `src/lib/api-key-auth.ts` — API key authentication middleware
+- `src/app/api/webhooks/` — Webhook CRUD + test endpoint
+- `src/app/api/api-keys/` — API key generation + revocation
+- `src/app/api/cron/webhook-retry/route.ts` — Vercel Cron retry handler
+- `src/app/(dashboard)/admin/developers/page.tsx` — Admin developer settings UI
 
 ### 19.3 SCORM Package Import
 
@@ -1489,6 +1494,7 @@ Before starting Phase 14, the following must be addressed:
 | Jan 2026      | **Phase 16 COMPLETED** - Admin Core: Security, Compliance & Platform Management: Email OTP MFA with backup codes and lockout, course approval workflow with review queue, email campaigns with recipient segmentation and batch sending via Resend, data retention policies with Vercel cron automation, GDPR compliance (data export, account deletion with anonymization, consent management), admin dashboards (MFA stats, review queue, campaigns, retention), user settings (MFA form, consent/privacy toggles), 97 tests passing, clean build |
 | Jan 2026      | **Phase 17 COMPLETED** - Calendar, Groups & Collaboration: FullCalendar integration (month/week/agenda views), calendar API with CRUD and date range filtering, auto-event sync from assignments/assessments/attendance/chapters, iCal subscription URL (unique per-user token, dynamic sync with Google Calendar/Outlook), upcoming deadlines widget, course groups system (CRUD + member management), auto-assign groups (random or balanced by progress with snake-draft), group assignment support (one submission per group, shared grade), instructor group management UI, student group view, peer review deferred to future phase, 97 tests passing, clean build |
 | Jan 2026      | **Phase 18 COMPLETED** - Advanced Analytics & Visualizations: Recharts integration, course-level analytics API (enrollment trends, grade distribution, item analysis, time-on-task, completion rates), platform-wide analytics API (user growth, course stats, enrollment trends, activity summary), at-risk student detection API (multi-factor: inactive 7+ days, progress <30% after 14 days, missed assignments), student progress timeline API (unified chronological feed), reusable chart components (LineChart, BarChart, PieChart, ActivityHeatmap, ProgressTimeline), instructor course analytics dashboard with tabbed views, at-risk students standalone page with filters and sortable table, admin platform charts dashboard (user growth, role distribution pie, enrollment trends, activity heatmap, course comparison), cohort analysis and PDF export deferred, 97 tests passing, clean build |
+| Jan 2026      | **Phase 19 COMPLETED** - Webhooks & Developer API: Webhook system with HMAC-SHA256 signed payloads (7 event types: enrollment created/completed, assignment submitted, grade updated, course published, assessment attempted, user created), webhook delivery engine with 10s timeout and fire-and-forget pattern, Vercel Cron retry with exponential backoff (1m/5m/30m/2h/12h), webhook CRUD API with test endpoint, API key system with SHA-256 hashed storage and show-once generation, resource-level permissions (courses/enrollments/grades/users/analytics), Bearer token auth middleware with rate limiting (60 req/min), admin developer settings page with webhook management (delivery logs, toggle, test) and API key management (generate/revoke), SAML/SCORM/Competency deferred, 97 tests passing, clean build |
 
 ---
 
