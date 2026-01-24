@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { questionSchema } from "@/lib/validations";
 
 interface RouteParams {
@@ -74,21 +75,22 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const { text, options, correctAnswer, points } = validatedData.data;
 
     // If options are provided, validate correctAnswer
-    if (options && correctAnswer !== undefined && correctAnswer >= options.length) {
+    if (options && correctAnswer != null && correctAnswer >= options.length) {
       return NextResponse.json(
         { message: "Correct answer index is out of range" },
         { status: 400 }
       );
     }
 
+    const updateData: Prisma.QuestionUncheckedUpdateInput = {};
+    if (text !== undefined) updateData.text = text;
+    if (options !== undefined) updateData.options = options ?? Prisma.JsonNull;
+    if (correctAnswer !== undefined) updateData.correctAnswer = correctAnswer ?? undefined;
+    if (points !== undefined) updateData.points = points;
+
     const updatedQuestion = await db.question.update({
       where: { id: questionId },
-      data: {
-        ...(text !== undefined && { text }),
-        ...(options !== undefined && { options }),
-        ...(correctAnswer !== undefined && { correctAnswer }),
-        ...(points !== undefined && { points }),
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedQuestion);

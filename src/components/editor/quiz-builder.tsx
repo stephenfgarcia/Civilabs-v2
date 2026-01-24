@@ -28,7 +28,7 @@ interface Question {
   id: string;
   text: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswer: number | null;
   points: number;
   position: number;
 }

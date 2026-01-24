@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { quizSchema } from "@/lib/validations";
+import { Prisma } from "@prisma/client";
+import { assessmentSchema } from "@/lib/validations";
 
 interface RouteParams {
   params: Promise<{ courseId: string; chapterId: string }>;
@@ -96,7 +97,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const validatedData = quizSchema.safeParse(body);
+    const validatedData = assessmentSchema.safeParse(body);
 
     if (!validatedData.success) {
       return NextResponse.json(
@@ -105,7 +106,14 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const { title, description, passingScore } = validatedData.data;
+    const {
+      title, description, passingScore, assessmentType,
+      timeLimit, attemptLimit, availableFrom, availableUntil,
+      shuffleQuestions, shuffleOptions, showAnswersAfter,
+      isProctored, passwordProtected, ipRestrictions,
+      honorCodeRequired, lateGracePeriod, lateSubmissionPolicy,
+      latePenaltyPercent, poolSize, questionBankId,
+    } = validatedData.data;
 
     const quiz = await db.quiz.create({
       data: {
@@ -113,7 +121,24 @@ export async function POST(request: Request, { params }: RouteParams) {
         description,
         passingScore,
         chapterId,
-      },
+        assessmentType,
+        timeLimit: timeLimit ?? null,
+        attemptLimit: attemptLimit ?? null,
+        availableFrom: availableFrom ? new Date(availableFrom) : null,
+        availableUntil: availableUntil ? new Date(availableUntil) : null,
+        shuffleQuestions,
+        shuffleOptions,
+        showAnswersAfter,
+        isProctored,
+        passwordProtected: passwordProtected ?? null,
+        ipRestrictions: ipRestrictions ?? Prisma.JsonNull,
+        honorCodeRequired,
+        lateGracePeriod: lateGracePeriod ?? null,
+        lateSubmissionPolicy,
+        latePenaltyPercent,
+        poolSize: poolSize ?? null,
+        questionBankId: questionBankId ?? null,
+      } as Prisma.QuizUncheckedCreateInput,
       include: {
         questions: true,
       },
@@ -161,7 +186,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json();
-    const validatedData = quizSchema.partial().safeParse(body);
+    const validatedData = assessmentSchema.partial().safeParse(body);
 
     if (!validatedData.success) {
       return NextResponse.json(
@@ -170,15 +195,33 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const { title, description, passingScore } = validatedData.data;
+    const data = validatedData.data;
+
+    const updateData: Prisma.QuizUncheckedUpdateInput = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.passingScore !== undefined) updateData.passingScore = data.passingScore;
+    if (data.assessmentType !== undefined) updateData.assessmentType = data.assessmentType;
+    if (data.timeLimit !== undefined) updateData.timeLimit = data.timeLimit ?? null;
+    if (data.attemptLimit !== undefined) updateData.attemptLimit = data.attemptLimit ?? null;
+    if (data.availableFrom !== undefined) updateData.availableFrom = data.availableFrom ? new Date(data.availableFrom) : null;
+    if (data.availableUntil !== undefined) updateData.availableUntil = data.availableUntil ? new Date(data.availableUntil) : null;
+    if (data.shuffleQuestions !== undefined) updateData.shuffleQuestions = data.shuffleQuestions;
+    if (data.shuffleOptions !== undefined) updateData.shuffleOptions = data.shuffleOptions;
+    if (data.showAnswersAfter !== undefined) updateData.showAnswersAfter = data.showAnswersAfter;
+    if (data.isProctored !== undefined) updateData.isProctored = data.isProctored;
+    if (data.passwordProtected !== undefined) updateData.passwordProtected = data.passwordProtected ?? null;
+    if (data.ipRestrictions !== undefined) updateData.ipRestrictions = data.ipRestrictions ?? Prisma.JsonNull;
+    if (data.honorCodeRequired !== undefined) updateData.honorCodeRequired = data.honorCodeRequired;
+    if (data.lateGracePeriod !== undefined) updateData.lateGracePeriod = data.lateGracePeriod ?? null;
+    if (data.lateSubmissionPolicy !== undefined) updateData.lateSubmissionPolicy = data.lateSubmissionPolicy;
+    if (data.latePenaltyPercent !== undefined) updateData.latePenaltyPercent = data.latePenaltyPercent;
+    if (data.poolSize !== undefined) updateData.poolSize = data.poolSize ?? null;
+    if (data.questionBankId !== undefined) updateData.questionBankId = data.questionBankId ?? null;
 
     const updatedQuiz = await db.quiz.update({
       where: { id: quiz.id },
-      data: {
-        ...(title !== undefined && { title }),
-        ...(description !== undefined && { description }),
-        ...(passingScore !== undefined && { passingScore }),
-      },
+      data: updateData,
       include: {
         questions: {
           orderBy: { position: "asc" },

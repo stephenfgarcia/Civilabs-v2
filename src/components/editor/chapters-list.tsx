@@ -78,7 +78,6 @@ export function ChaptersList({ courseId, chapters }: ChaptersListProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: newChapterTitle,
-          position: chapters.length,
         }),
       });
 
@@ -86,6 +85,10 @@ export function ChaptersList({ courseId, chapters }: ChaptersListProps) {
         setNewChapterTitle("");
         setIsCreating(false);
         router.refresh();
+      } else {
+        const data = await response.json();
+        console.error("Failed to create chapter:", data.message);
+        alert(data.message || "Failed to create chapter");
       }
     } catch (error) {
       console.error("Failed to create chapter:", error);

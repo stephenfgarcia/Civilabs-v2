@@ -35,7 +35,7 @@ export const courseSchema = z.object({
 export const chapterSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
-  isFree: z.boolean(),
+  isFree: z.boolean().optional().default(false),
 });
 
 export const lessonSchema = z.object({
@@ -48,18 +48,125 @@ export const lessonSchema = z.object({
   sceneConfig: z.any().optional(),
 });
 
-// Quiz validations
-export const quizSchema = z.object({
+// Assessment validations (expanded from quiz)
+export const assessmentSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
   passingScore: z.number().min(0).max(100).default(70),
+  assessmentType: z.enum(["QUIZ", "EXAM", "PRACTICE"]).default("QUIZ"),
+  timeLimit: z.number().min(1).max(600).nullable().optional(),
+  attemptLimit: z.number().min(1).max(100).nullable().optional(),
+  availableFrom: z.string().datetime().nullable().optional(),
+  availableUntil: z.string().datetime().nullable().optional(),
+  shuffleQuestions: z.boolean().default(false),
+  shuffleOptions: z.boolean().default(false),
+  showAnswersAfter: z.enum(["SUBMISSION", "AFTER_DUE", "MANUAL", "NEVER"]).default("SUBMISSION"),
+  isProctored: z.boolean().default(false),
+  passwordProtected: z.string().nullable().optional(),
+  ipRestrictions: z.array(z.string()).nullable().optional(),
+  honorCodeRequired: z.boolean().default(false),
+  lateGracePeriod: z.number().min(0).max(120).nullable().optional(),
+  lateSubmissionPolicy: z.enum(["ACCEPT", "REJECT", "PENALTY"]).default("ACCEPT"),
+  latePenaltyPercent: z.number().min(0).max(100).default(0),
+  poolSize: z.number().min(1).nullable().optional(),
+  questionBankId: z.string().nullable().optional(),
 });
 
+// Backward-compatible alias
+export const quizSchema = assessmentSchema;
+
 export const questionSchema = z.object({
-  text: z.string().min(5, "Question must be at least 5 characters"),
-  options: z.array(z.string()).min(2, "At least 2 options required"),
-  correctAnswer: z.number().min(0),
+  text: z.string().min(1, "Question text is required"),
+  type: z.enum([
+    "MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ANSWER",
+    "MULTI_SELECT", "MATCHING", "ORDERING",
+    "ESSAY", "FILL_IN_BLANK"
+  ]).default("MULTIPLE_CHOICE"),
+  options: z.array(z.string()).nullable().optional(),
+  correctAnswer: z.number().min(0).nullable().optional(),
   points: z.number().min(1).default(1),
+  explanation: z.string().nullable().optional(),
+  acceptedAnswers: z.array(z.object({
+    text: z.string(),
+    matchMode: z.enum(["exact", "contains", "regex"]).default("exact"),
+  })).nullable().optional(),
+  matchingPairs: z.array(z.object({
+    left: z.string(),
+    right: z.string(),
+  })).nullable().optional(),
+  orderingItems: z.array(z.string()).nullable().optional(),
+  correctBoolAnswer: z.boolean().nullable().optional(),
+  blanks: z.array(z.object({
+    position: z.number(),
+    acceptedAnswers: z.array(z.string()),
+  })).nullable().optional(),
+  multiSelectAnswers: z.array(z.number()).nullable().optional(),
+  partialCreditEnabled: z.boolean().default(false),
+  essayWordLimit: z.number().min(1).nullable().optional(),
+});
+
+// Assignment validations
+export const assignmentSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().optional(),
+  type: z.enum(["FILE_UPLOAD", "TEXT_ENTRY", "URL_LINK", "MEDIA_RECORDING"]).default("FILE_UPLOAD"),
+  chapterId: z.string().nullable().optional(),
+  dueDate: z.string().datetime().nullable().optional(),
+  points: z.number().min(1).max(10000).default(100),
+  isPublished: z.boolean().default(false),
+  allowedFileTypes: z.string().nullable().optional(),
+  maxFileSize: z.number().min(1).max(500).nullable().optional(),
+  maxSubmissions: z.number().min(1).max(100).default(1),
+  latePolicy: z.enum(["ACCEPT_LATE", "REJECT_LATE", "NO_DUE_DATE"]).default("ACCEPT_LATE"),
+  latePenaltyPercent: z.number().min(0).max(100).default(0),
+  availableFrom: z.string().datetime().nullable().optional(),
+  availableUntil: z.string().datetime().nullable().optional(),
+  rubricId: z.string().nullable().optional(),
+  isGroupAssignment: z.boolean().default(false),
+});
+
+// Assignment submission validation
+export const assignmentSubmissionSchema = z.object({
+  textContent: z.string().nullable().optional(),
+  urlLink: z.string().url().nullable().optional(),
+  fileUrl: z.string().url().nullable().optional(),
+  fileName: z.string().nullable().optional(),
+  fileSize: z.number().nullable().optional(),
+});
+
+// Rubric validations
+export const rubricSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().optional(),
+  isTemplate: z.boolean().default(false),
+});
+
+export const rubricCriterionSchema = z.object({
+  title: z.string().min(1, "Criterion title is required"),
+  description: z.string().optional(),
+  maxPoints: z.number().min(1).default(10),
+  levels: z.array(z.object({
+    label: z.string().min(1),
+    description: z.string().optional(),
+    points: z.number().min(0),
+  })).min(2, "At least 2 levels required"),
+});
+
+// Question bank validation
+export const questionBankSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().optional(),
+});
+
+// Grade submission validation
+export const gradeSubmissionSchema = z.object({
+  grade: z.number().min(0),
+  feedback: z.string().optional(),
+  rubricScores: z.record(z.string(), z.object({
+    levelIndex: z.number().min(0),
+    points: z.number().min(0),
+    comment: z.string().optional(),
+  })).nullable().optional(),
 });
 
 // Discussion validations
@@ -139,8 +246,15 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type CourseInput = z.infer<typeof courseSchema>;
 export type ChapterInput = z.infer<typeof chapterSchema>;
 export type LessonInput = z.infer<typeof lessonSchema>;
+export type AssessmentInput = z.infer<typeof assessmentSchema>;
 export type QuizInput = z.infer<typeof quizSchema>;
 export type QuestionInput = z.infer<typeof questionSchema>;
+export type AssignmentInput = z.infer<typeof assignmentSchema>;
+export type AssignmentSubmissionInput = z.infer<typeof assignmentSubmissionSchema>;
+export type RubricInput = z.infer<typeof rubricSchema>;
+export type RubricCriterionInput = z.infer<typeof rubricCriterionSchema>;
+export type QuestionBankInput = z.infer<typeof questionBankSchema>;
+export type GradeSubmissionInput = z.infer<typeof gradeSubmissionSchema>;
 export type DiscussionInput = z.infer<typeof discussionSchema>;
 export type ReplyInput = z.infer<typeof replySchema>;
 export type MessageInput = z.infer<typeof messageSchema>;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { questionSchema } from "@/lib/validations";
 
 interface RouteParams {
@@ -79,26 +80,109 @@ export async function POST(request: Request, { params }: RouteParams) {
       );
     }
 
-    const { text, options, correctAnswer, points } = validatedData.data;
-
-    // Validate correctAnswer is within options range
-    if (correctAnswer >= options.length) {
-      return NextResponse.json(
-        { message: "Correct answer index is out of range" },
-        { status: 400 }
-      );
-    }
-
+    const data = validatedData.data;
     const position = quiz.questions.length;
+
+    // Type-specific validation
+    switch (data.type) {
+      case "MULTIPLE_CHOICE":
+        if (!data.options || data.options.length < 2) {
+          return NextResponse.json(
+            { message: "Multiple choice requires at least 2 options" },
+            { status: 400 }
+          );
+        }
+        if (data.correctAnswer === null || data.correctAnswer === undefined || data.correctAnswer >= data.options.length) {
+          return NextResponse.json(
+            { message: "Correct answer index is out of range" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "MULTI_SELECT":
+        if (!data.options || data.options.length < 2) {
+          return NextResponse.json(
+            { message: "Multi-select requires at least 2 options" },
+            { status: 400 }
+          );
+        }
+        if (!data.multiSelectAnswers || data.multiSelectAnswers.length === 0) {
+          return NextResponse.json(
+            { message: "Multi-select requires at least 1 correct answer" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "TRUE_FALSE":
+        if (data.correctBoolAnswer === null || data.correctBoolAnswer === undefined) {
+          return NextResponse.json(
+            { message: "True/False requires a correct answer (true or false)" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "MATCHING":
+        if (!data.matchingPairs || data.matchingPairs.length < 2) {
+          return NextResponse.json(
+            { message: "Matching requires at least 2 pairs" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "ORDERING":
+        if (!data.orderingItems || data.orderingItems.length < 2) {
+          return NextResponse.json(
+            { message: "Ordering requires at least 2 items" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "FILL_IN_BLANK":
+        if (!data.blanks || data.blanks.length < 1) {
+          return NextResponse.json(
+            { message: "Fill-in-the-blank requires at least 1 blank" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "SHORT_ANSWER":
+        if (!data.acceptedAnswers || data.acceptedAnswers.length < 1) {
+          return NextResponse.json(
+            { message: "Short answer requires at least 1 accepted answer" },
+            { status: 400 }
+          );
+        }
+        break;
+
+      case "ESSAY":
+        // No specific validation needed for essay
+        break;
+    }
 
     const question = await db.question.create({
       data: {
-        text,
-        options,
-        correctAnswer,
-        points,
+        text: data.text,
+        type: data.type,
+        options: data.options ? (data.options as Prisma.InputJsonValue) : undefined,
+        correctAnswer: data.correctAnswer ?? undefined,
+        points: data.points,
         position,
         quizId: quiz.id,
+        explanation: data.explanation ?? undefined,
+        acceptedAnswers: data.acceptedAnswers ? (data.acceptedAnswers as Prisma.InputJsonValue) : undefined,
+        matchingPairs: data.matchingPairs ? (data.matchingPairs as Prisma.InputJsonValue) : undefined,
+        orderingItems: data.orderingItems ? (data.orderingItems as Prisma.InputJsonValue) : undefined,
+        correctBoolAnswer: data.correctBoolAnswer ?? undefined,
+        blanks: data.blanks ? (data.blanks as Prisma.InputJsonValue) : undefined,
+        multiSelectAnswers: data.multiSelectAnswers ? (data.multiSelectAnswers as Prisma.InputJsonValue) : undefined,
+        partialCreditEnabled: data.partialCreditEnabled,
+        essayWordLimit: data.essayWordLimit ?? undefined,
       },
     });
 

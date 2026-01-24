@@ -50,6 +50,7 @@ model User {
   bookmarks              Bookmark[]
   notes                  Note[]
   courseReviews          CourseReview[]
+  assignmentSubmissions  AssignmentSubmission[]
 
   @@index([role])
   @@index([createdAt])
@@ -135,6 +136,9 @@ model Course {
   prerequisites      CoursePrerequisite[] @relation("CoursePrerequisites")
   prerequisiteFor    CoursePrerequisite[] @relation("PrerequisiteFor")
   reviews            CourseReview[]
+  assignments        Assignment[]
+  questionBanks      QuestionBank[]
+  rubrics            Rubric[]
 
   @@index([instructorId])
   @@index([categoryId])
@@ -156,9 +160,10 @@ model Chapter {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons  Lesson[]
-  quiz     Quiz?
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+  quiz        Quiz?
+  assignments Assignment[]
 
   @@index([courseId])
   @@map("chapters")
@@ -198,51 +203,120 @@ model Lesson {
   @@map("lessons")
 }
 
-// ==================== QUIZ MODELS ====================
+// ==================== ASSESSMENT MODELS (formerly Quiz) ====================
+
+enum QuestionType {
+  MULTIPLE_CHOICE    // Original type: pick one from options
+  TRUE_FALSE         // Boolean answer
+  SHORT_ANSWER       // Text input with accepted answers
+  MULTI_SELECT       // Multiple correct answers
+  MATCHING           // Two-column matching pairs
+  ORDERING           // Drag-to-order items
+  ESSAY              // Free-form text, manual grading required
+  FILL_IN_BLANK      // Inline blanks with accepted variants
+}
+
+enum AssessmentType {
+  QUIZ               // Low-stakes, multiple attempts typically allowed
+  EXAM               // High-stakes, limited attempts, may be timed
+  PRACTICE           // Unlimited attempts, no grade impact
+}
 
 model Quiz {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?
-  passingScore Int      @default(70) // Percentage
-  chapterId    String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String         @id @default(cuid())
+  title           String
+  description     String?        @db.Text
+  passingScore    Int            @default(70) // Percentage
+  chapterId       String         @unique
+  assessmentType  AssessmentType @default(QUIZ)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Assessment Configuration (nullable for backward compat with existing quizzes)
+  timeLimit           Int?       // Time limit in minutes (null = untimed)
+  attemptLimit        Int?       // Max attempts (null = unlimited)
+  availableFrom       DateTime?  // Start availability window
+  availableUntil      DateTime?  // End availability window
+  shuffleQuestions    Boolean    @default(false)
+  shuffleOptions      Boolean    @default(false)
+  showAnswersAfter    String?    @default("SUBMISSION") // SUBMISSION, AFTER_DUE, MANUAL, NEVER
+  isProctored         Boolean    @default(false)
+  passwordProtected   String?    // Entry password (null = no password)
+  ipRestrictions      Json?      // Array of allowed IP ranges
+  honorCodeRequired   Boolean    @default(false)
+  lateGracePeriod     Int?       // Minutes allowed after time expires (marked late)
+  lateSubmissionPolicy String?   @default("ACCEPT") // ACCEPT, REJECT, PENALTY
+  latePenaltyPercent  Int?       @default(0)        // % deducted if late
+  poolSize            Int?       // Number of questions to pull from bank (null = all)
+  questionBankId      String?    // Optional: pull questions from bank
 
   // Relations
-  chapter   Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  questions Question[]
-  attempts  QuizAttempt[]
+  chapter      Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions    Question[]
+  attempts     QuizAttempt[]
+  questionBank QuestionBank?    @relation(fields: [questionBankId], references: [id], onDelete: SetNull)
 
+  @@index([assessmentType])
+  @@index([availableFrom])
+  @@index([availableUntil])
   @@map("quizzes")
 }
 
 model Question {
-  id            String   @id @default(cuid())
-  text          String   @db.Text
-  options       Json     // Array of options
-  correctAnswer Int      // Index of correct option
-  points        Int      @default(1)
+  id            String       @id @default(cuid())
+  text          String       @db.Text
+  type          QuestionType @default(MULTIPLE_CHOICE)
+  options       Json?        // Array of options (for MULTIPLE_CHOICE, MULTI_SELECT)
+  correctAnswer Int?         // Index of correct option (MULTIPLE_CHOICE only)
+  points        Int          @default(1)
   position      Int
-  quizId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  quizId        String?      // Nullable: can belong to quiz or question bank
+  explanation   String?      @db.Text  // Shown after answer submission
+
+  // Extended fields for new question types
+  acceptedAnswers  Json?     // SHORT_ANSWER/FILL_IN_BLANK: array of accepted answers [{text, matchMode: "exact"|"contains"|"regex"}]
+  matchingPairs    Json?     // MATCHING: array of {left, right} pairs
+  orderingItems    Json?     // ORDERING: array of items in correct order
+  correctBoolAnswer Boolean? // TRUE_FALSE: the correct answer
+  blanks           Json?     // FILL_IN_BLANK: array of {position, acceptedAnswers[]}
+  multiSelectAnswers Json?   // MULTI_SELECT: array of correct option indices
+  partialCreditEnabled Boolean @default(false) // MULTI_SELECT: allow partial credit
+  essayWordLimit   Int?      // ESSAY: max word count
+  essayRubricId    String?   // ESSAY: optional rubric for grading guidance
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   // Relations
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quiz          Quiz?        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  bankItems     QuestionBankItem[]
 
   @@index([quizId])
+  @@index([type])
   @@map("questions")
 }
 
 model QuizAttempt {
-  id          String   @id @default(cuid())
-  userId      String
-  quizId      String
-  score       Int
-  passed      Boolean
-  answers     Json     // User's answers
-  completedAt DateTime @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  quizId          String
+  score           Int       // Percentage score
+  passed          Boolean
+  answers         Json      // User's answers: { [questionId]: answer }
+  completedAt     DateTime  @default(now())
+
+  // Extended fields for assessment features
+  startedAt       DateTime? // When the attempt was started (for timed assessments)
+  timeSpentSeconds Int?     // Total time spent in seconds
+  isLate          Boolean   @default(false)
+  honorCodeAccepted Boolean @default(false)
+  ipAddress       String?   // For IP restriction auditing
+  questionsServed Json?     // Which questions were served (for randomized pools)
+  earnedPoints    Int?      // Raw points earned
+  totalPoints     Int?      // Total possible points
+  needsManualGrading Boolean @default(false) // Has essay/short-answer needing review
+  manualGradedAt  DateTime?
+  manualGradedBy  String?   // Instructor who graded
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -250,7 +324,192 @@ model QuizAttempt {
 
   @@index([userId])
   @@index([quizId])
+  @@index([needsManualGrading])
+  @@index([userId, quizId])
   @@map("quiz_attempts")
+}
+
+// ==================== QUESTION BANK ====================
+
+model QuestionBank {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  courseId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course  Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  items   QuestionBankItem[]
+  quizzes Quiz[]             // Quizzes that pull from this bank
+
+  @@index([courseId])
+  @@map("question_banks")
+}
+
+model QuestionBankItem {
+  id             String   @id @default(cuid())
+  questionBankId String
+  questionId     String
+  position       Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  // Relations
+  questionBank QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  question     Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionBankId, questionId])
+  @@index([questionBankId])
+  @@index([questionId])
+  @@map("question_bank_items")
+}
+
+// ==================== ASSIGNMENT SYSTEM ====================
+
+enum AssignmentType {
+  FILE_UPLOAD
+  TEXT_ENTRY
+  URL_LINK
+  MEDIA_RECORDING
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  GRADED
+  RETURNED
+  LATE
+}
+
+enum LatePolicy {
+  ACCEPT_LATE
+  REJECT_LATE
+  NO_DUE_DATE
+}
+
+model Assignment {
+  id                String         @id @default(cuid())
+  title             String
+  description       String?        @db.Text
+  type              AssignmentType @default(FILE_UPLOAD)
+  courseId           String
+  chapterId         String?        // Optional: associate with a chapter
+  dueDate           DateTime?
+  points            Int            @default(100)
+  isPublished       Boolean        @default(false)
+  position          Int            @default(0)
+
+  // Submission config
+  allowedFileTypes  String?        // Comma-separated: ".pdf,.docx,.zip"
+  maxFileSize       Int?           // Max file size in MB
+  maxSubmissions    Int            @default(1) // Max resubmissions allowed
+  latePolicy        LatePolicy     @default(ACCEPT_LATE)
+  latePenaltyPercent Int           @default(0) // % penalty per day late
+
+  // Availability
+  availableFrom     DateTime?
+  availableUntil    DateTime?
+
+  // Grading
+  rubricId          String?
+  isGroupAssignment Boolean        @default(false)
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  course      Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter     Chapter?              @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  rubric      Rubric?               @relation(fields: [rubricId], references: [id], onDelete: SetNull)
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([chapterId])
+  @@index([dueDate])
+  @@index([isPublished])
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id              String           @id @default(cuid())
+  assignmentId    String
+  userId          String
+  status          SubmissionStatus @default(DRAFT)
+  submissionNumber Int             @default(1) // Which attempt this is
+
+  // Submission content (varies by assignment type)
+  fileUrl         String?
+  fileName        String?
+  fileSize        Int?             // Bytes
+  textContent     String?          @db.Text
+  urlLink         String?
+
+  // Grading
+  grade           Float?           // Points earned
+  feedback        String?          @db.Text
+  rubricScores    Json?            // { [criterionId]: { levelIndex, points, comment } }
+  gradedAt        DateTime?
+  gradedBy        String?          // Instructor user ID
+
+  // Timestamps
+  submittedAt     DateTime?
+  isLate          Boolean          @default(false)
+  latePenaltyApplied Float?        // Actual penalty applied (points deducted)
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([userId])
+  @@index([status])
+  @@index([assignmentId, userId])
+  @@map("assignment_submissions")
+}
+
+// ==================== RUBRIC SYSTEM ====================
+
+model Rubric {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  courseId     String
+  isTemplate  Boolean  @default(false) // Can be reused across courses
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  criteria    RubricCriterion[]
+  assignments Assignment[]
+
+  @@index([courseId])
+  @@index([createdBy])
+  @@map("rubrics")
+}
+
+model RubricCriterion {
+  id          String @id @default(cuid())
+  rubricId    String
+  title       String
+  description String?  @db.Text
+  position    Int
+  maxPoints   Int      @default(10)
+  levels      Json     // Array of { label: string, description: string, points: number }
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  rubric Rubric @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+
+  @@index([rubricId])
+  @@map("rubric_criteria")
 }
 
 // ==================== PROGRESS & ENROLLMENT ====================
@@ -482,6 +741,11 @@ enum NotificationType {
   COURSE_UPDATE       // Course content updated
   ANNOUNCEMENT        // System announcement
   WELCOME             // Welcome notification
+  ASSIGNMENT_DUE      // Assignment due date approaching
+  ASSIGNMENT_GRADED   // Assignment has been graded
+  ASSIGNMENT_RETURNED // Assignment returned for revision
+  ASSESSMENT_AVAILABLE // New assessment available
+  MANUAL_GRADE_NEEDED // Essay/short-answer needs grading (instructor)
 }
 
 model Notification {
@@ -671,10 +935,21 @@ enum AuditAction {
   LESSON_UPDATED
   LESSON_DELETED
 
-  // Quiz
+  // Quiz / Assessment
   QUIZ_ATTEMPTED
   QUIZ_PASSED
   QUIZ_FAILED
+  ASSESSMENT_CREATED
+  ASSESSMENT_UPDATED
+  ASSESSMENT_DELETED
+
+  // Assignment
+  ASSIGNMENT_CREATED
+  ASSIGNMENT_UPDATED
+  ASSIGNMENT_DELETED
+  ASSIGNMENT_SUBMITTED
+  ASSIGNMENT_GRADED
+  ASSIGNMENT_RETURNED
 
   // Admin Actions
   SETTINGS_CHANGED

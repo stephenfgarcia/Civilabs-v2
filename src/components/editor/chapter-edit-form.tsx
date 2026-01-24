@@ -8,7 +8,10 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { chapterSchema, type ChapterInput } from "@/lib/validations";
+import { chapterSchema } from "@/lib/validations";
+import { z } from "zod";
+
+type ChapterFormValues = z.input<typeof chapterSchema>;
 
 interface Chapter {
   id: string;
@@ -31,7 +34,7 @@ export function ChapterEditForm({ courseId, chapter }: ChapterEditFormProps) {
     register,
     handleSubmit,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<ChapterInput>({
+  } = useForm<ChapterFormValues>({
     resolver: zodResolver(chapterSchema),
     defaultValues: {
       title: chapter.title,
@@ -40,7 +43,7 @@ export function ChapterEditForm({ courseId, chapter }: ChapterEditFormProps) {
     },
   });
 
-  const onSubmit = async (data: ChapterInput) => {
+  const onSubmit = async (data: ChapterFormValues) => {
     setError(null);
     setSuccess(false);
 

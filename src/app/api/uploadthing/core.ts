@@ -138,6 +138,25 @@ export const ourFileRouter = {
       console.log("Forum attachment upload complete for userId:", metadata.userId);
       return { uploadedBy: metadata.userId, url: file.ufsUrl };
     }),
+
+  // Assignment submission files (student uploads)
+  assignmentSubmission: f({
+    image: { maxFileSize: "8MB", maxFileCount: 5 },
+    pdf: { maxFileSize: "32MB", maxFileCount: 5 },
+    "application/zip": { maxFileSize: "64MB", maxFileCount: 1 },
+    "application/msword": { maxFileSize: "16MB", maxFileCount: 5 },
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": { maxFileSize: "16MB", maxFileCount: 5 },
+    "text/plain": { maxFileSize: "4MB", maxFileCount: 5 },
+  })
+    .middleware(async () => {
+      const session = await auth();
+      if (!session?.user) throw new UploadThingError("Unauthorized");
+      return { userId: session.user.id };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log("Assignment submission upload for userId:", metadata.userId);
+      return { uploadedBy: metadata.userId, url: file.ufsUrl, name: file.name, size: file.size };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

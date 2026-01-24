@@ -17,7 +17,7 @@ interface Question {
   id: string;
   text: string;
   options: unknown;
-  correctAnswer: number;
+  correctAnswer: number | null;
   points: number;
 }
 
@@ -234,7 +234,7 @@ export function QuizPlayer({
                             ? questionOptions[selectedAnswer]
                             : "Not answered"}
                         </p>
-                        {!isCorrect && (
+                        {!isCorrect && question.correctAnswer != null && (
                           <p className="text-sm text-green-600 mt-1">
                             Correct answer: {questionOptions[question.correctAnswer]}
                           </p>

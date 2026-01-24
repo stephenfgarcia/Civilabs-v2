@@ -44,7 +44,7 @@ interface Question {
   id: string;
   text: string;
   options: unknown;
-  correctAnswer: number;
+  correctAnswer: number | null;
   points: number;
 }
 
