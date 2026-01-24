@@ -51,6 +51,10 @@ model User {
   notes                  Note[]
   courseReviews          CourseReview[]
   assignmentSubmissions  AssignmentSubmission[]
+  studentGrades          StudentGrade[]
+  announcements          Announcement[]
+  attendanceRecords      AttendanceRecord[]
+  activities             UserActivity[]
 
   @@index([role])
   @@index([createdAt])
@@ -139,6 +143,11 @@ model Course {
   assignments        Assignment[]
   questionBanks      QuestionBank[]
   rubrics            Rubric[]
+  gradeCategories    GradeCategory[]
+  gradingScales      GradingScale[]
+  releaseConditions  ReleaseCondition[]
+  announcements      Announcement[]
+  attendanceSessions AttendanceSession[]
 
   @@index([instructorId])
   @@index([categoryId])
@@ -156,6 +165,8 @@ model Chapter {
   isPublished Boolean  @default(false)
   isFree      Boolean  @default(false)
   courseId    String
+  availableFrom  DateTime? // Content scheduling
+  availableUntil DateTime? // Content scheduling
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -190,6 +201,8 @@ model Lesson {
   position      Int
   duration      Int?       // Duration in seconds (for video)
   chapterId     String
+  availableFrom  DateTime? // Content scheduling
+  availableUntil DateTime? // Content scheduling
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -951,6 +964,22 @@ enum AuditAction {
   ASSIGNMENT_GRADED
   ASSIGNMENT_RETURNED
 
+  // Gradebook
+  GRADE_OVERRIDDEN
+  GRADE_EXPORTED
+
+  // Announcements
+  ANNOUNCEMENT_CREATED
+  ANNOUNCEMENT_UPDATED
+  ANNOUNCEMENT_DELETED
+
+  // Attendance
+  ATTENDANCE_RECORDED
+  ATTENDANCE_UPDATED
+
+  // Course Cloning
+  COURSE_CLONED
+
   // Admin Actions
   SETTINGS_CHANGED
   DATA_EXPORTED
@@ -1013,4 +1042,222 @@ model PlatformSettings {
   updatedAt DateTime @updatedAt
 
   @@map("platform_settings")
+}
+
+// ==================== GRADEBOOK SYSTEM (Phase 15) ====================
+
+model GradeCategory {
+  id          String   @id @default(cuid())
+  name        String
+  weight      Float    @default(0) // Percentage weight (all categories should sum to 100)
+  courseId     String
+  position    Int      @default(0)
+  dropLowest  Int      @default(0) // Number of lowest grades to drop
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  gradeItems  GradeItem[]
+
+  @@index([courseId])
+  @@map("grade_categories")
+}
+
+model GradeItem {
+  id            String   @id @default(cuid())
+  categoryId    String
+  title         String
+  points        Float    @default(100)
+  type          GradeItemType @default(MANUAL)
+  referenceId   String?  // Links to assignmentId or quizId
+  isExtraCredit Boolean  @default(false)
+  isVisible     Boolean  @default(true) // Hidden from students until released
+  dueDate       DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  category      GradeCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  studentGrades StudentGrade[]
+
+  @@index([categoryId])
+  @@index([referenceId])
+  @@map("grade_items")
+}
+
+enum GradeItemType {
+  ASSIGNMENT
+  ASSESSMENT
+  ATTENDANCE
+  MANUAL
+}
+
+model StudentGrade {
+  id            String   @id @default(cuid())
+  gradeItemId   String
+  userId        String
+  score         Float?   // Points earned (null = not yet graded)
+  letterGrade   String?  // Computed letter grade
+  overrideScore Float?   // Manual override by instructor
+  overrideBy    String?  // Instructor who overrode
+  overrideReason String?
+  gradedAt      DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  gradeItem     GradeItem @relation(fields: [gradeItemId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gradeItemId, userId])
+  @@index([gradeItemId])
+  @@index([userId])
+  @@map("student_grades")
+}
+
+model GradingScale {
+  id          String   @id @default(cuid())
+  name        String
+  courseId     String?  // null = global/default scale
+  isDefault   Boolean  @default(false)
+  levels      Json     // Array of {label, minPercent, maxPercent, gpaValue}
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@map("grading_scales")
+}
+
+// ==================== RELEASE CONDITIONS (Phase 15) ====================
+
+model ReleaseCondition {
+  id              String   @id @default(cuid())
+  targetType      String   // CHAPTER, LESSON, ASSIGNMENT, ASSESSMENT
+  targetId        String   // ID of the content item
+  courseId         String
+  conditionType   String   // DATE_AFTER, LESSON_COMPLETED, CHAPTER_COMPLETED, ASSESSMENT_PASSED, ASSESSMENT_SCORE_ABOVE, ASSIGNMENT_SUBMITTED, ASSIGNMENT_GRADED
+  conditionValue  Json     // { date, lessonId, chapterId, assessmentId, minScore, assignmentId }
+  operator        String   @default("AND") // AND or OR with other conditions on same target
+  position        Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@index([courseId])
+  @@map("release_conditions")
+}
+
+// ==================== ANNOUNCEMENTS (Phase 15) ====================
+
+model Announcement {
+  id            String    @id @default(cuid())
+  title         String
+  content       String    @db.Text
+  courseId       String?   // null = global/platform announcement
+  authorId      String
+  isPinned      Boolean   @default(false)
+  isPublished   Boolean   @default(true)
+  publishedAt   DateTime  @default(now())
+  scheduledFor  DateTime? // Future publish date
+  attachmentUrl String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  course        Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([authorId])
+  @@index([publishedAt])
+  @@index([isPublished, publishedAt])
+  @@map("announcements")
+}
+
+// ==================== ATTENDANCE (Phase 15) ====================
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model AttendanceSession {
+  id          String   @id @default(cuid())
+  courseId     String
+  date        DateTime @default(now())
+  title       String?  // Optional session label
+  type        String   @default("IN_PERSON") // IN_PERSON, VIRTUAL, ASYNC
+  notes       String?  @db.Text
+  createdBy   String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  records     AttendanceRecord[]
+
+  @@index([courseId])
+  @@index([date])
+  @@map("attendance_sessions")
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  sessionId   String
+  userId      String
+  status      AttendanceStatus @default(PRESENT)
+  notes       String?
+  markedAt    DateTime         @default(now())
+  markedBy    String           // Who recorded the attendance
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@map("attendance_records")
+}
+
+// ==================== USER ACTIVITY TELEMETRY (Phase 15) ====================
+
+model UserActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId     String?
+  lessonId    String?
+  eventType   String   // VIEW, SCROLL, VIDEO_PLAY, VIDEO_PAUSE, SUBMIT, LOGIN, IDLE
+  metadata    Json?    // { scrollDepth, videoPercent, device, browser, etc. }
+  sessionId   String?  // Client session grouping
+  timestamp   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([timestamp])
+  @@index([userId, courseId])
+  @@index([eventType])
+  @@map("user_activities")
 }

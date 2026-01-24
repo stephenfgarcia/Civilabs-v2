@@ -263,3 +263,127 @@ export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type NotificationPreferenceInput = z.infer<typeof notificationPreferenceSchema>;
 export type PrivacySettingsInput = z.infer<typeof privacySettingsSchema>;
 export type PlatformSettingsInput = z.infer<typeof platformSettingsSchema>;
+
+// ==================== Phase 15 Validations ====================
+
+// Grade Category
+export const gradeCategorySchema = z.object({
+  name: z.string().min(1).max(100),
+  weight: z.number().min(0).max(100),
+  position: z.number().int().min(0).optional(),
+  dropLowest: z.number().int().min(0).default(0),
+});
+
+// Grade Item
+export const gradeItemSchema = z.object({
+  categoryId: z.string().min(1),
+  title: z.string().min(1).max(200),
+  points: z.number().min(0).default(100),
+  type: z.enum(["ASSIGNMENT", "ASSESSMENT", "ATTENDANCE", "MANUAL"]).default("MANUAL"),
+  referenceId: z.string().optional(),
+  isExtraCredit: z.boolean().default(false),
+  isVisible: z.boolean().default(true),
+  dueDate: z.string().optional(),
+});
+
+// Student Grade (manual entry or override)
+export const studentGradeSchema = z.object({
+  gradeItemId: z.string().min(1),
+  userId: z.string().min(1),
+  score: z.number().min(0).optional(),
+  overrideScore: z.number().min(0).optional(),
+  overrideReason: z.string().optional(),
+});
+
+// Grading Scale
+export const gradingScaleSchema = z.object({
+  name: z.string().min(1).max(100),
+  isDefault: z.boolean().default(false),
+  levels: z.array(z.object({
+    label: z.string().min(1),
+    minPercent: z.number().min(0).max(100),
+    maxPercent: z.number().min(0).max(100),
+    gpaValue: z.number().min(0).max(4.0).optional(),
+  })).min(1),
+});
+
+// Release Condition
+export const releaseConditionSchema = z.object({
+  targetType: z.enum(["CHAPTER", "LESSON", "ASSIGNMENT", "ASSESSMENT"]),
+  targetId: z.string().min(1),
+  conditionType: z.enum([
+    "DATE_AFTER", "LESSON_COMPLETED", "CHAPTER_COMPLETED",
+    "ASSESSMENT_PASSED", "ASSESSMENT_SCORE_ABOVE",
+    "ASSIGNMENT_SUBMITTED", "ASSIGNMENT_GRADED",
+  ]),
+  conditionValue: z.record(z.string(), z.unknown()),
+  operator: z.enum(["AND", "OR"]).default("AND"),
+  position: z.number().int().min(0).optional(),
+});
+
+// Announcement
+export const announcementSchema = z.object({
+  title: z.string().min(1).max(200),
+  content: z.string().min(1),
+  isPinned: z.boolean().default(false),
+  isPublished: z.boolean().default(true),
+  scheduledFor: z.string().optional(),
+  attachmentUrl: z.string().url().optional(),
+});
+
+// Attendance Session
+export const attendanceSessionSchema = z.object({
+  date: z.string().optional(),
+  title: z.string().max(200).optional(),
+  type: z.enum(["IN_PERSON", "VIRTUAL", "ASYNC"]).default("IN_PERSON"),
+  notes: z.string().optional(),
+});
+
+// Attendance Record
+export const attendanceRecordSchema = z.object({
+  userId: z.string().min(1),
+  status: z.enum(["PRESENT", "ABSENT", "LATE", "EXCUSED"]),
+  notes: z.string().optional(),
+});
+
+// Batch attendance (multiple students at once)
+export const batchAttendanceSchema = z.object({
+  records: z.array(attendanceRecordSchema).min(1),
+});
+
+// Course Clone
+export const courseCloneSchema = z.object({
+  title: z.string().min(1).max(200),
+  dateShiftDays: z.number().int().optional(), // Shift all dates by N days
+  includeAssignments: z.boolean().default(true),
+  includeAssessments: z.boolean().default(true),
+  includeRubrics: z.boolean().default(true),
+  includeReleaseConditions: z.boolean().default(true),
+  includeAnnouncements: z.boolean().default(false),
+});
+
+// Telemetry Event
+export const telemetryEventSchema = z.object({
+  courseId: z.string().optional(),
+  lessonId: z.string().optional(),
+  eventType: z.enum(["VIEW", "SCROLL", "VIDEO_PLAY", "VIDEO_PAUSE", "SUBMIT", "LOGIN", "IDLE"]),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  sessionId: z.string().optional(),
+});
+
+// Batch telemetry
+export const batchTelemetrySchema = z.object({
+  events: z.array(telemetryEventSchema).min(1).max(50),
+});
+
+// Type exports
+export type GradeCategoryInput = z.infer<typeof gradeCategorySchema>;
+export type GradeItemInput = z.infer<typeof gradeItemSchema>;
+export type StudentGradeInput = z.infer<typeof studentGradeSchema>;
+export type GradingScaleInput = z.infer<typeof gradingScaleSchema>;
+export type ReleaseConditionInput = z.infer<typeof releaseConditionSchema>;
+export type AnnouncementInput = z.infer<typeof announcementSchema>;
+export type AttendanceSessionInput = z.infer<typeof attendanceSessionSchema>;
+export type AttendanceRecordInput = z.infer<typeof attendanceRecordSchema>;
+export type CourseCloneInput = z.infer<typeof courseCloneSchema>;
+export type TelemetryEventInput = z.infer<typeof telemetryEventSchema>;
