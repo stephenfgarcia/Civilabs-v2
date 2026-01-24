@@ -305,10 +305,14 @@ src/
 │   │   ├── admin/              # Admin-only pages
 │   │   │   ├── audit-logs/     # Audit logs viewer
 │   │   │   ├── reports/        # Admin reports
-│   │   │   └── analytics/      # Platform analytics
+│   │   │   ├── analytics/      # Platform analytics
+│   │   │   └── settings/       # Admin settings page
 │   │   ├── instructor/         # Instructor-only pages
 │   │   │   ├── courses/        # Course management
-│   │   │   └── media/          # Media library
+│   │   │   ├── media/          # Media library
+│   │   │   └── settings/       # Instructor settings page
+│   │   ├── student/            # Student-only pages
+│   │   │   └── settings/       # Student settings page
 │   │   ├── courses/            # Student course pages
 │   │   ├── certificates/       # Certificate management
 │   │   ├── bookmarks/          # Bookmarked lessons (Phase 9)
@@ -327,7 +331,9 @@ src/
 │   │   ├── certificates/       # Certificate generation
 │   │   ├── chat/               # Chat API (Phase 4)
 │   │   ├── forums/             # Forums API (Phase 3)
-│   │   ├── admin/              # Admin API (Phase 5)
+│   │   ├── admin/              # Admin API (Phase 5) + Platform Settings API
+│   │   ├── profile/            # User profile API (Settings)
+│   │   ├── settings/           # Notification & Privacy settings APIs
 │   │   ├── bookmarks/           # Bookmarks CRUD API (Phase 9)
 │   │   ├── notes/               # Notes CRUD API (Phase 9)
 │   │   ├── learning-paths/      # Learning paths API (Phase 9)
@@ -348,6 +354,7 @@ src/
 │   ├── certificate/            # Certificate components
 │   ├── chat/                   # Chat components (Phase 4)
 │   ├── forums/                 # Forum components (Phase 3)
+│   ├── settings/               # Settings form components (Settings)
 │   ├── 3d/                     # 3D viewer components (Phase 6)
 │   ├── upload/                 # File upload components (Phase 7)
 │   └── providers/              # Context providers
@@ -381,7 +388,7 @@ Root Config Files:
 
 ## Database Schema Summary
 
-### Models
+### Models (Implemented)
 
 - **User** - Authentication and profile
 - **Account** - OAuth accounts (NextAuth)
@@ -403,6 +410,8 @@ Root Config Files:
 - **Media** - Media library items (Phase 7)
 - **Notification** - User notifications (Phase 8)
 - **AuditLog** - Admin audit trail (Production)
+- **NotificationPreference** - Per-user notification toggles (Settings)
+- **PlatformSettings** - Admin platform configuration singleton (Settings)
 - **Bookmark** - Lesson bookmarks (Phase 9)
 - **Note** - Personal lesson notes (Phase 9)
 - **Review** - Course ratings/reviews (Phase 9)
@@ -411,32 +420,94 @@ Root Config Files:
 - **LearningPathEnrollment** - User path enrollment (Phase 9)
 - **CoursePrerequisite** - Course dependencies (Phase 9)
 
+### Models (Planned — Phase 14-19)
+
+**Phase 14 — Assessment & Assignments:**
+- **Assignment** - File/text submission assignments
+- **AssignmentSubmission** - Student submissions with grading and status
+- **Rubric** - Grading rubrics with criteria
+- **RubricCriterion** - Individual rubric criteria and level definitions
+- **QuestionBank** - Reusable question pools per course
+- **QuestionBankItem** - Links questions to banks
+- *Updated:* Quiz → Assessment (renamed, expanded fields)
+- *Updated:* QuizAttempt → AssessmentAttempt (expanded fields)
+- *Updated:* Question (new type enum, matching/ordering/blank fields)
+
+**Phase 15 — Gradebook & Scheduling:**
+- **GradingScale** - Custom grading scales with configurable levels
+- **GradeCategory** - Weighted grade categories per course
+- **GradeItem** - Individual gradeable items linked to assignments/assessments
+- **StudentGrade** - Per-student grades with override support
+- **ReleaseCondition** - Brightspace-style content release rules
+- **ReleaseConditionGroup** - AND/OR grouping for nested conditions
+- **Announcement** - Course and global announcements
+- **AttendanceSession** - Attendance session records
+- **AttendanceRecord** - Per-student attendance entries
+- **AttendancePolicy** - Attendance rules and grade impact
+- **UserActivity** - Full telemetry event tracking
+
+**Phase 16 — Admin Security & Compliance:**
+- **MFAConfig** - Multi-factor auth settings per user
+- **CourseApproval** - Course review workflow records
+- **EmailCampaign** - Admin email broadcast campaigns
+- **RetentionPolicy** - Per-data-type retention rules
+- **ConsentRecord** - GDPR consent tracking per user
+
+**Phase 17 — Calendar, Groups & Peer Review:**
+- **CalendarEvent** - Course and personal calendar events
+- **CourseGroup** - Student groups within courses
+- **GroupMember** - Group membership with roles
+- **PeerReview** - Peer review submissions and feedback
+- **PeerReviewConfig** - Peer review assignment configuration
+
+**Phase 18 — Analytics:**
+- No new models (read-only visualization layer)
+
+**Phase 19 — Integrations:**
+- **SAMLConfig** - SAML/SSO configuration per organization
+- **Webhook** - Developer webhook subscriptions
+- **WebhookDelivery** - Webhook delivery logs and retries
+- **APIKey** - Developer API keys with permissions
+- **SCORMPackage** - Uploaded SCORM content packages
+- **SCORMData** - SCORM runtime data per student
+- **Competency** - Learning competency definitions (hierarchical)
+- **CompetencyMapping** - Competency-to-content relationships
+- **StudentCompetency** - Student mastery tracking per competency
+
 ---
 
 ## Progress Summary
 
-| Phase              | Description                 | Status      | Completion |
-| ------------------ | --------------------------- | ----------- | ---------- |
-| Phase 1            | Foundation & Authentication | COMPLETED   | 100%       |
-| Phase 2            | Core LMS Features           | COMPLETED   | 100%       |
-| Phase 3            | Discussion Forums           | COMPLETED   | 100%       |
-| Phase 4            | Real-time Chat              | COMPLETED   | 100%       |
-| Phase 5            | Admin Dashboard             | COMPLETED   | 100%       |
-| Phase 6            | 3D Scene Viewer             | COMPLETED   | 100%       |
-| Phase 7            | File Upload & Media         | COMPLETED   | 100%       |
-| Phase 8            | Notifications               | COMPLETED   | 100%       |
-| Phase 9            | Advanced Learning           | COMPLETED   | 100%       |
-| Phase 10           | Mobile & PWA                | SKIPPED     | N/A        |
-| Phase 11           | Performance & SEO           | COMPLETED   | 100%       |
-| Phase 12           | Testing & Quality           | COMPLETED   | 100%       |
-| Phase 13           | Analytics & Reporting       | COMPLETED   | 100%       |
-| Production Ready   | Error Tracking, Rate Limit  | COMPLETED   | 100%       |
-| Deployment         | Vercel, Domain, OAuth       | COMPLETED   | 100%       |
+| Phase              | Description                        | Status      | Completion |
+| ------------------ | ---------------------------------- | ----------- | ---------- |
+| Phase 1            | Foundation & Authentication        | COMPLETED   | 100%       |
+| Phase 2            | Core LMS Features                  | COMPLETED   | 100%       |
+| Phase 3            | Discussion Forums                  | COMPLETED   | 100%       |
+| Phase 4            | Real-time Chat                     | COMPLETED   | 100%       |
+| Phase 5            | Admin Dashboard                    | COMPLETED   | 100%       |
+| Phase 6            | 3D Scene Viewer                    | COMPLETED   | 100%       |
+| Phase 7            | File Upload & Media                | COMPLETED   | 100%       |
+| Phase 8            | Notifications                      | COMPLETED   | 100%       |
+| Phase 9            | Advanced Learning                  | COMPLETED   | 100%       |
+| Phase 10           | Mobile & PWA                       | SKIPPED     | N/A        |
+| Phase 11           | Performance & SEO                  | COMPLETED   | 100%       |
+| Phase 12           | Testing & Quality                  | COMPLETED   | 100%       |
+| Phase 13           | Analytics & Reporting              | COMPLETED   | 100%       |
+| Phase 14           | Instructor Core: Assessment & Assignments | NOT STARTED | 0%    |
+| Phase 15           | Instructor Core: Gradebook & Scheduling   | NOT STARTED | 0%    |
+| Phase 16           | Admin Core: Security & Compliance         | NOT STARTED | 0%    |
+| Phase 17           | Cross-Role: Calendar, Groups & Collab     | NOT STARTED | 0%    |
+| Phase 18           | Cross-Role: Advanced Analytics & Charts   | NOT STARTED | 0%    |
+| Phase 19           | Integrations: SSO, SCORM, Webhooks        | NOT STARTED | 0%    |
+| User Settings      | Profile, Password, Notifications, Privacy, Platform | COMPLETED | 100% |
+| Production Ready   | Error Tracking, Rate Limit         | COMPLETED   | 100%       |
+| Deployment         | Vercel, Domain, OAuth              | COMPLETED   | 100%       |
 
-**Core Features Completion: 100%**
+**Core Features (Phase 1-13): 100% Complete**
+**Competitive Parity Features (Phase 14-19): 0% Complete**
 **Production Readiness: 100%**
 **Deployment: 100% (Live at civilabsreview.com)**
-**Overall Project Completion: 100% (All phases complete except Phase 10 which was skipped)**
+**Overall Project Completion: 68% (13/19 phases complete, Phase 10 skipped)**
 
 ---
 
@@ -639,6 +710,563 @@ Root Config Files:
 
 ---
 
+### User Settings (All Roles)
+
+**Status: COMPLETED**
+
+> **Scope:** Profile management, password change, notification preferences, privacy settings (student), and platform configuration (admin). Shared settings page component with role-conditional sections.
+
+#### Database Schema Changes
+
+| Change | Status | Files |
+|--------|--------|-------|
+| `profileVisibility` field on User | [x] | `prisma/schema.prisma` |
+| `NotificationPreference` model | [x] | `prisma/schema.prisma` (7 email toggle fields, one-to-one with User) |
+| `PlatformSettings` model | [x] | `prisma/schema.prisma` (registration, maintenance, file upload config) |
+
+#### Validation Schemas
+
+| Schema | Status | Files |
+|--------|--------|-------|
+| `changePasswordSchema` | [x] | `src/lib/validations.ts` (current != new, strength requirements) |
+| `notificationPreferenceSchema` | [x] | `src/lib/validations.ts` (7 boolean toggles) |
+| `privacySettingsSchema` | [x] | `src/lib/validations.ts` (profileVisibility toggle) |
+| `platformSettingsSchema` | [x] | `src/lib/validations.ts` (admin platform config) |
+
+#### API Endpoints
+
+| Endpoint | Method | Status | Files | Access |
+|----------|--------|--------|-------|--------|
+| `/api/profile` | GET/PATCH | [x] | `src/app/api/profile/route.ts` | All authenticated |
+| `/api/auth/change-password` | POST | [x] | `src/app/api/auth/change-password/route.ts` | All authenticated (credentials only) |
+| `/api/settings/notifications` | GET/PATCH | [x] | `src/app/api/settings/notifications/route.ts` | All authenticated |
+| `/api/settings/privacy` | GET/PATCH | [x] | `src/app/api/settings/privacy/route.ts` | Student only |
+| `/api/admin/settings/platform` | GET/PATCH | [x] | `src/app/api/admin/settings/platform/route.ts` | Admin only |
+| `/api/uploadthing` (userAvatar) | POST | [x] | `src/app/api/uploadthing/core.ts` (pre-existing) | All authenticated |
+
+#### UI Components
+
+| Component | Status | Files | Description |
+|-----------|--------|-------|-------------|
+| ProfileForm | [x] | `src/components/settings/profile-form.tsx` | Name, bio, avatar upload (UploadThing) |
+| PasswordForm | [x] | `src/components/settings/password-form.tsx` | Current + new password, OAuth detection |
+| NotificationForm | [x] | `src/components/settings/notification-form.tsx` | 7 toggle switches with descriptions |
+| PrivacyForm | [x] | `src/components/settings/privacy-form.tsx` | Profile visibility toggle (student only) |
+| PlatformForm | [x] | `src/components/settings/platform-form.tsx` | Registration, maintenance, file config (admin only) |
+| SettingsPage | [x] | `src/components/settings/settings-page.tsx` | Shared page with role-conditional sections |
+
+#### Route Pages
+
+| Route | Status | Files |
+|-------|--------|-------|
+| `/student/settings` | [x] | `src/app/(dashboard)/student/settings/page.tsx` |
+| `/instructor/settings` | [x] | `src/app/(dashboard)/instructor/settings/page.tsx` |
+| `/admin/settings` | [x] | `src/app/(dashboard)/admin/settings/page.tsx` |
+
+#### Infrastructure Changes
+
+| Change | Status | Files |
+|--------|--------|-------|
+| Sonner Toaster added to root layout | [x] | `src/app/layout.tsx` |
+| Settings links added to sidebar (all roles) | [x] | `src/components/layout/sidebar.tsx` |
+
+#### Features by Role
+
+| Feature | Student | Instructor | Admin |
+|---------|---------|------------|-------|
+| Profile (name, bio, avatar upload) | Yes | Yes | Yes |
+| Password Change | Yes | Yes | Yes |
+| Email Display (read-only) | Yes | Yes | Yes |
+| Notification Preferences (7 toggles) | Yes | Yes | Yes |
+| Privacy (profile visibility) | Yes | - | - |
+| Platform Settings (registration, maintenance, roles, file limits) | - | - | Yes |
+
+**Architecture:** Shared `<SettingsPage>` component renders role-conditional sections based on `session.user.role`. Single codebase for all three roles.
+
+**Completion Date:** January 2026
+
+---
+
+---
+
+## Development Approach: Role-Based Progressive Development
+
+> **Strategy:** Features are organized by role (Instructor → Student → Admin), with each phase building integrated experiences. Student-facing counterparts are built alongside instructor features within the same phase to ensure end-to-end functionality. Each phase is self-contained and deployable independently.
+
+> **Architecture Decisions Made:**
+> - **Unified Assessment System:** Quizzes and exams share one model with configurable settings (time limit, attempts, proctoring, etc.)
+> - **Release Condition Engine:** Brightspace-style full condition engine with nested AND/OR rules, evaluated in real-time with caching
+> - **Grade Scales:** Custom scales (admin/instructor-defined with any labels and thresholds)
+> - **MFA:** Email OTP + TOTP (authenticator apps)
+> - **Course Approval:** Simple review workflow (submit → approve/reject → publish)
+> - **Data Retention:** Full compliance suite (GDPR + FERPA + configurable per-type retention)
+> - **Activity Tracking:** Full telemetry (scroll depth, video %, click heatmaps, idle detection, device info)
+> - **Assessment Config:** Enterprise-level (proctoring hooks, honor code, late grace period, adaptive difficulty, IP restriction, password-protected)
+
+---
+
+## Recommended Development Paths
+
+Below are 3 development path options. The chosen path determines build order:
+
+### Path A: Role-First (RECOMMENDED — Chosen)
+```
+Phase 14: Instructor Core → Phase 15: Student Core → Phase 16: Admin Core → Phase 17-19: Cross-role
+```
+**Pros:** Each role gets a complete experience before moving on. Easier to test role isolation. Instructor tools exist before student tools need them.
+**Cons:** Students wait until Phase 15 for their features.
+
+### Path B: Feature-Domain
+```
+Assessment Domain → Grading Domain → Scheduling Domain → Admin Domain
+```
+**Pros:** Each feature is fully complete across all roles before moving on.
+**Cons:** Partial experiences for all roles simultaneously. Harder to demo progress.
+
+### Path C: Dependency-Optimized
+```
+Data Models → APIs → Instructor UI → Student UI → Admin UI
+```
+**Pros:** No wasted work. Backend is rock-solid before UI.
+**Cons:** No usable UI for a long time. Hard to validate UX decisions.
+
+---
+
+## Pre-Development Considerations
+
+Before starting Phase 14, the following must be addressed:
+
+### Database Migration Strategy
+1. All new models are **additive** (no breaking changes to existing tables)
+2. New fields on existing models (Chapter, Lesson, Question) should be **nullable** to preserve backward compatibility
+3. Run `prisma migrate dev` per phase, not per feature, to minimize migration count
+4. Create a **migration naming convention**: `YYYYMMDD_phase_XX_feature_name`
+
+### Testing Strategy
+1. Each new API route gets unit tests (continuing Jest + `@jest-environment node` pattern)
+2. Integration tests for cross-model workflows (e.g., assignment → submission → grade → gradebook)
+3. Run full test suite before each phase merge
+4. Target: maintain 100% pass rate, add 15-25 tests per phase
+
+### Performance Considerations
+1. **Release Condition Engine:** Real-time evaluation requires per-request DB queries. Implement Redis caching (Upstash) for evaluated conditions with TTL invalidation on trigger events
+2. **Full Telemetry:** Heartbeat tracking (every 30s) generates high write volume. Use batched writes (collect 5-10 events, write once) and separate telemetry table with periodic cleanup
+3. **Gradebook Calculation:** Weighted averages across potentially hundreds of items. Pre-calculate and cache totals, invalidate on grade change
+4. **SCORM Runtime:** iframe communication is synchronous. Use message queuing to avoid blocking UI
+
+### Security Considerations
+1. **File Submissions:** Validate file types server-side (not just extension). Scan for malicious content headers. Store in isolated paths.
+2. **Grade APIs:** Strict instructor/admin-only access. Never expose grade calculation logic to students.
+3. **MFA:** Store TOTP secrets encrypted. Rate-limit OTP attempts (5 failures → lockout).
+4. **SAML:** Validate XML signatures. Prevent XXE attacks in metadata parsing.
+5. **Webhooks:** Sign payloads with HMAC-SHA256. Validate webhook URLs (no internal IPs). Timeout after 10s.
+
+---
+
+## Phase 14: Instructor Core — Assessment & Assignment System
+
+**Status: NOT STARTED**
+**Priority: CRITICAL**
+**Role Focus: INSTRUCTOR (with integrated student submission experience)**
+
+> **Scope:** This phase transforms the instructor experience from "content creator" to "full course manager" by adding assignments, the unified assessment system (quiz/exam), rubrics, and the grading queue.
+
+### 14.1 Unified Assessment System (Quiz + Exam)
+
+> **Design:** Single `Assessment` model replaces the current `Quiz` model. Backward-compatible migration: existing quizzes become assessments with default settings.
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Assessment Model Migration | [ ] | Critical | Rename Quiz → Assessment. Add: timeLimit, attemptLimit, availableFrom, availableUntil, shuffleQuestions, showAnswersAfter, isProctored, passwordProtected, ipRestrictions, honorCodeRequired, lateGracePeriod, adaptiveDifficulty |
+| Question Type Enum Expansion | [ ] | Critical | Add to existing: TRUE_FALSE, SHORT_ANSWER, MATCHING, MULTI_SELECT, ORDERING, ESSAY, FILL_IN_BLANK |
+| Question Bank Model | [ ] | High | QuestionBank with courseId; QuestionBankItem linking questions to banks. Support random pool selection per assessment. |
+| True/False Questions | [ ] | High | Boolean answer, auto-graded |
+| Short Answer | [ ] | High | Text input with accepted answers list (exact/contains/regex matching) |
+| Multi-Select | [ ] | High | Multiple correct answers with partial credit formula |
+| Matching Questions | [ ] | High | Two-column matching pairs, stored as JSON pairs array |
+| Ordering/Sequencing | [ ] | High | Drag-to-order items, scored by correct positions |
+| Essay/Free Response | [ ] | High | Rich text response, flags for manual grading queue |
+| Fill-in-the-Blank | [ ] | Medium | Inline blanks with accepted answer variants |
+| Timed Assessment Support | [ ] | High | Server-tracked countdown, auto-submit on expiry, grace period |
+| Attempt Limit Config | [ ] | High | Max attempts (1 = exam-like, unlimited = practice) |
+| Question Pool Selection | [ ] | High | "Pick N random from bank X" per assessment section |
+| Lockdown Browser Flag | [ ] | Medium | Mark assessment as requiring proctoring (metadata for external tools) |
+| IP Restriction | [ ] | Medium | Whitelist IP ranges for in-lab assessments |
+| Password-Protected Access | [ ] | Medium | Assessment requires entry password (instructor distributes in class) |
+| Honor Code Prompt | [ ] | Medium | Require student to acknowledge academic integrity before starting |
+| Late Grace Period | [ ] | Medium | Allow submission X minutes after time expires (marked as late) |
+| Adaptive Difficulty | [ ] | Low | Select harder/easier questions based on running performance |
+| Assessment Builder UI | [ ] | Critical | Updated quiz builder supporting all question types and configs |
+| Assessment Player (Student) | [ ] | Critical | Student-facing assessment interface with timer, question navigation, submit |
+| Manual Grading Queue | [ ] | High | Instructor view: list of essay/short-answer submissions needing review |
+| Assessment Analytics | [ ] | High | Per-question success rate, discrimination index, average score |
+
+### 14.2 Assignment System
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Assignment Model (Prisma) | [ ] | Critical | title, description (rich text), dueDate, points, type (FILE_UPLOAD/TEXT_ENTRY/URL_LINK/MEDIA_RECORDING), allowedFileTypes, maxFileSize, maxSubmissions, latePolicy (ACCEPT_LATE/REJECT_LATE/NO_DUE_DATE), latePenaltyPercent, courseId, chapterId, rubricId (optional), isGroupAssignment |
+| AssignmentSubmission Model | [ ] | Critical | userId, assignmentId, fileUrl, fileName, textContent, urlLink, submittedAt, status (DRAFT/SUBMITTED/GRADED/RETURNED/LATE), grade, feedback, gradedAt, gradedBy, rubricScores (JSON), groupId (optional) |
+| Assignment CRUD API | [ ] | Critical | `src/app/api/courses/[courseId]/assignments/route.ts` — Instructor create/list |
+| Assignment Detail API | [ ] | Critical | `src/app/api/courses/[courseId]/assignments/[assignmentId]/route.ts` |
+| Submission API (Student) | [ ] | Critical | Submit work, view own submission, resubmit if allowed |
+| Submissions List API (Instructor) | [ ] | Critical | List all submissions with status/grade, bulk actions |
+| Submission Grade API | [ ] | Critical | Grade individual submission, attach feedback |
+| Late Submission Detection | [ ] | High | Auto-mark submissions after due date, apply penalty |
+| Submission Timestamps | [ ] | High | Track exact submit time, display relative to due date |
+| Assignment Editor (Instructor) | [ ] | Critical | Form with rich text description, file config, due date, rubric selector |
+| Submission View (Student) | [ ] | Critical | Upload/write submission, view grade/feedback, resubmit |
+| Submissions List (Instructor) | [ ] | Critical | Table of all submissions, quick-grade, download all files |
+| Inline Feedback | [ ] | High | Text annotations on submissions |
+| File Preview | [ ] | Medium | Preview PDFs/images inline in grading view |
+| Submission Timestamp Report | [ ] | High | Report showing all submissions with timestamps vs due dates |
+
+### 14.3 Rubrics
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Rubric Model (Prisma) | [ ] | High | title, description, courseId, isTemplate (boolean), createdBy |
+| RubricCriterion Model | [ ] | High | rubricId, title, description, position, levels (JSON array: [{label, description, points}]) |
+| Rubric CRUD API | [ ] | High | Create, update, delete, list rubrics per course |
+| Rubric Builder UI | [ ] | High | Visual grid: criteria rows × level columns with point values |
+| Rubric-Assignment Link | [ ] | High | Attach rubric to assignment; rubric scores stored on submission |
+| Rubric Grading UI | [ ] | High | Click cells to grade, auto-sum points, add comments per criterion |
+| Rubric Template Library | [ ] | Medium | Save/load rubric templates across courses |
+| Rubric PDF Export | [ ] | Low | Export rubric as PDF for offline use |
+
+**Dependencies:** Phase 7 (File Upload) — already completed
+**Database Changes:**
+- Rename `Quiz` → `Assessment` (with migration alias for backward compat)
+- New models: Assignment, AssignmentSubmission, Rubric, RubricCriterion, QuestionBank, QuestionBankItem
+- Update `Question` model: add `type` enum expansion, matchingPairs, orderingItems, acceptedAnswers, blanks fields
+- Update `QuizAttempt` → `AssessmentAttempt`: add startedAt, timeRemaining, isLate, honorCodeAccepted
+
+---
+
+## Phase 15: Instructor Core — Gradebook, Scheduling & Course Management
+
+**Status: NOT STARTED**
+**Priority: HIGH**
+**Role Focus: INSTRUCTOR (with integrated student grade visibility)**
+
+> **Scope:** Adds the centralized gradebook, content scheduling with Brightspace-style release conditions, announcements, attendance, course cloning, and activity reports. Depends on Phase 14 for assignment/assessment data.
+
+### 15.1 Gradebook System
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| GradingScale Model | [ ] | Critical | name, levels (JSON: [{label, minPercent, maxPercent, gpaValue}]), courseId (nullable = global), isDefault |
+| GradeCategory Model | [ ] | Critical | name, weight (percentage), courseId, position, dropLowest (int) |
+| GradeItem Model | [ ] | Critical | categoryId, title, points, type (ASSIGNMENT/ASSESSMENT/ATTENDANCE/MANUAL), referenceId (links to assignment/assessment), isExtraCredit, isVisible |
+| StudentGrade Model | [ ] | Critical | gradeItemId, userId, score, letterGrade (computed), overrideScore, overrideBy, overrideReason, gradedAt |
+| Gradebook API | [ ] | Critical | `src/app/api/courses/[courseId]/gradebook/route.ts` — Full gradebook matrix |
+| Grade Category API | [ ] | High | CRUD for categories with weight validation (must sum to 100%) |
+| Grade Override API | [ ] | High | Manual entry/override for any grade item |
+| Grade Calculation Engine | [ ] | Critical | Weighted average with: drop lowest, extra credit, custom scales |
+| Custom Grading Scale API | [ ] | High | CRUD for grading scales (admin creates global, instructor creates per-course) |
+| Gradebook Page (Instructor) | [ ] | Critical | Spreadsheet-style: students × grade items. Color-coded by performance. |
+| Student Grade View (Student) | [ ] | Critical | Personal grades page showing categories, items, weighted total, letter grade |
+| Grade Analytics (Instructor) | [ ] | High | Distribution histogram, class average, median, std dev per item/category |
+| Grade Export (CSV/Excel) | [ ] | High | Download full gradebook with calculated totals |
+| Grade Visibility Controls | [ ] | High | Per-item visibility toggle (hide until date or manual release) |
+| Auto-Grade Sync | [ ] | High | Assessment scores and assignment grades auto-populate gradebook items |
+
+### 15.2 Content Scheduling & Release Conditions (Brightspace-Style)
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Availability Fields (Chapter) | [ ] | Critical | Add availableFrom, availableUntil (nullable DateTime) to Chapter model |
+| Availability Fields (Lesson) | [ ] | Critical | Add availableFrom, availableUntil to Lesson model |
+| Availability Fields (Assignment) | [ ] | Critical | Already on Assignment model from Phase 14 |
+| ReleaseCondition Model | [ ] | Critical | targetType (CHAPTER/LESSON/ASSIGNMENT/ASSESSMENT), targetId, conditionGroup (AND/OR grouping), conditionType, conditionValue, position |
+| ReleaseConditionGroup Model | [ ] | High | parentTargetType, parentTargetId, operator (AND/OR), position — allows nested condition groups |
+| Condition Types Supported | [ ] | Critical | DATE_AFTER, DATE_BEFORE, LESSON_COMPLETED, CHAPTER_COMPLETED, ASSESSMENT_PASSED, ASSESSMENT_SCORE_ABOVE, ASSIGNMENT_SUBMITTED, ASSIGNMENT_GRADED, GROUP_MEMBERSHIP, COMPETENCY_MASTERY |
+| Release Condition API | [ ] | Critical | CRUD for conditions per content item |
+| Real-time Condition Evaluator | [ ] | Critical | Middleware checks conditions on content access. Redis cache with TTL invalidation on trigger events. |
+| Condition Cache Invalidation | [ ] | High | Event-driven: lesson completed → invalidate conditions referencing that lesson |
+| Schedule Editor UI (Instructor) | [ ] | High | Date pickers + condition builder on chapter/lesson/assignment editors |
+| Condition Builder UI | [ ] | High | Visual AND/OR condition tree editor with dropdown condition types |
+| Student Lock Indicators | [ ] | High | Course sidebar shows locks with tooltip: "Available after completing X" |
+| Scheduling Overview (Instructor) | [ ] | Medium | Timeline view of all content availability across the course |
+
+### 15.3 Announcements
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Announcement Model | [ ] | High | title, content (rich text), courseId (null = global), authorId, isPinned, publishedAt, scheduledFor (nullable), attachmentUrl |
+| Announcements API | [ ] | High | `src/app/api/courses/[courseId]/announcements/route.ts` — CRUD |
+| Global Announcements API | [ ] | High | `src/app/api/announcements/route.ts` — Admin broadcasts |
+| Course Announcements Tab (Instructor) | [ ] | High | Create/manage announcements within course |
+| Announcements Feed (Student) | [ ] | High | Dashboard feed showing recent announcements across all enrolled courses |
+| Course Announcements View (Student) | [ ] | High | Announcements tab within course learn page |
+| Email Broadcast | [ ] | Medium | Toggle to also email announcement to enrolled students (via Resend) |
+| Scheduled Announcements | [ ] | Medium | Set future publish date (cron-based or on-access check) |
+| Announcement Pinning | [ ] | Medium | Pin to top of feed |
+
+### 15.4 Attendance Tracking
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| AttendanceSession Model | [ ] | High | courseId, date, type (IN_PERSON/VIRTUAL/ASYNC), notes, createdBy |
+| AttendanceRecord Model | [ ] | High | sessionId, userId, status (PRESENT/ABSENT/LATE/EXCUSED), notes, markedAt, markedBy |
+| AttendancePolicy Model | [ ] | Medium | courseId, maxAbsences, gradeImpactPercent, lateCountsAsHalf (boolean) |
+| Attendance API | [ ] | High | `src/app/api/courses/[courseId]/attendance/route.ts` — CRUD sessions + records |
+| Roll-Call UI (Instructor) | [ ] | High | Quick-mark interface: student list with PRESENT/ABSENT/LATE/EXCUSED buttons |
+| Attendance View (Student) | [ ] | High | Personal attendance record with percentage and session history |
+| Attendance Reports (Instructor) | [ ] | High | Per-student attendance %, CSV export, flagging chronic absences |
+| Attendance-Gradebook Link | [ ] | Medium | Attendance category in gradebook (auto-calculated from policy) |
+| Auto-Attendance | [ ] | Low | Mark present when student accesses course content within session window |
+
+### 15.5 Course Cloning
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Course Clone API | [ ] | High | `POST /api/courses/[courseId]/clone` — Deep copy course structure |
+| Clone Scope | [ ] | High | Copy: chapters, lessons, assignments, assessments, rubrics, release conditions. Skip: enrollments, submissions, grades, attempts, attendance |
+| Clone Options UI | [ ] | High | Dialog: new title, adjust dates (shift all by X days), select what to include |
+| Date Shift | [ ] | Medium | Automatically shift all due dates by offset (e.g., +90 days for next semester) |
+
+### 15.6 Student Activity Reports & Telemetry
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| UserActivity Model | [ ] | High | userId, courseId, lessonId, eventType (VIEW/SCROLL/VIDEO_PLAY/VIDEO_PAUSE/CLICK/IDLE/SUBMIT), metadata (JSON: scrollDepth, videoPercent, coordinates, device, browser), timestamp, sessionId |
+| Telemetry Collection API | [ ] | High | `POST /api/telemetry` — Batched event ingestion (collect 5-10 events, send once) |
+| Client Telemetry Hook | [ ] | High | `useTelemetry()` React hook: heartbeat every 30s, scroll tracking, video events, idle detection |
+| Activity Dashboard (Instructor) | [ ] | High | Per-student: last login, pages viewed, time spent, video watch %, scroll depth |
+| Submission Timestamp Report | [ ] | High | All submissions with timestamp vs due date, late analysis |
+| At-Risk Student Alerts | [ ] | High | Flag students with: no login in 7+ days, <30% progress, multiple missed deadlines |
+| Activity Export (CSV) | [ ] | Medium | Export full activity data per course |
+| Telemetry Cleanup Job | [ ] | Medium | Batch delete telemetry data older than retention period |
+
+**Dependencies:** Phase 14 (Assignments, Assessments provide grade data)
+**Database Changes:** New models: GradingScale, GradeCategory, GradeItem, StudentGrade, ReleaseCondition, ReleaseConditionGroup, Announcement, AttendanceSession, AttendanceRecord, AttendancePolicy, UserActivity
+
+---
+
+## Phase 16: Admin Core — Security, Compliance & Platform Management
+
+**Status: NOT STARTED**
+**Priority: HIGH**
+**Role Focus: ADMIN**
+
+> **Scope:** Adds institutional-grade admin capabilities: MFA enforcement, course approval workflows, email campaigns, and full data retention/compliance suite (GDPR + FERPA).
+
+### 16.1 Multi-Factor Authentication (MFA)
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| MFAConfig Model | [ ] | Critical | userId, method (TOTP/EMAIL_OTP), secret (encrypted), isEnabled, backupCodes (hashed), lastUsedAt |
+| TOTP Setup Flow | [ ] | Critical | Generate secret → show QR code → verify with code → enable |
+| TOTP Verification | [ ] | Critical | On login: prompt for 6-digit code after password success |
+| Email OTP Flow | [ ] | High | Send 6-digit code to email → verify within 5 min TTL |
+| Backup Codes | [ ] | High | Generate 10 single-use recovery codes on MFA setup |
+| MFA Enforcement (Admin) | [ ] | High | Admin can require MFA for all users or specific roles |
+| MFA Management API | [ ] | Critical | `src/app/api/auth/mfa/route.ts` — Setup, verify, disable |
+| MFA Settings UI | [ ] | Critical | User settings page: enable/disable, manage methods, view backup codes |
+| Rate Limiting on OTP | [ ] | High | 5 failed attempts → 15 min lockout |
+| MFA Admin Dashboard | [ ] | Medium | View MFA adoption stats, enforce policies |
+
+### 16.2 Course Approval Workflow
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| CourseApproval Model | [ ] | High | courseId, status (DRAFT/PENDING_REVIEW/APPROVED/REJECTED/CHANGES_REQUESTED), submittedAt, reviewedBy, reviewedAt, reviewComment, history (JSON array of status changes) |
+| Approval API | [ ] | High | `src/app/api/admin/courses/[courseId]/approval/route.ts` — Submit, approve, reject, request changes |
+| Submit for Review (Instructor) | [ ] | High | Button on course editor: "Submit for Review" (changes status, notifies admin) |
+| Review Queue (Admin) | [ ] | High | Admin page: list of pending courses with preview and approve/reject/comment actions |
+| Review Notification | [ ] | High | Notify instructor on approval/rejection with admin comment |
+| Approval Required Toggle | [ ] | Medium | Admin setting: require approval before any course goes live (can be disabled) |
+| Approval History | [ ] | Medium | View full approval timeline per course |
+
+### 16.3 Email Campaign & Broadcast
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| EmailCampaign Model | [ ] | High | title, content (rich text), recipientFilter (JSON: role, courseId, enrollment status), sentAt, sentBy, sentCount, status (DRAFT/SENDING/SENT/FAILED) |
+| Campaign API | [ ] | High | `src/app/api/admin/campaigns/route.ts` — CRUD, send |
+| Recipient Segmentation | [ ] | High | Filter by: role, enrolled in course X, completed course Y, inactive for N days, registered after date |
+| Campaign Editor UI | [ ] | High | Rich text editor + recipient filter builder + preview + send |
+| Batch Sending | [ ] | High | Send in batches of 50 via Resend (respect rate limits) |
+| Campaign Analytics | [ ] | Medium | Sent count, open rate (if tracking pixel supported), bounce count |
+| Unsubscribe Support | [ ] | Medium | Unsubscribe link in emails, respect preferences |
+| Scheduled Campaigns | [ ] | Medium | Schedule send for future date/time |
+
+### 16.4 Data Retention & Compliance (GDPR + FERPA)
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| RetentionPolicy Model | [ ] | Critical | dataType (USER_DATA/ENROLLMENTS/SUBMISSIONS/TELEMETRY/AUDIT_LOGS/CHAT_MESSAGES), retentionDays, action (ARCHIVE/ANONYMIZE/DELETE), isActive |
+| Retention Policy API | [ ] | Critical | `src/app/api/admin/retention/route.ts` — CRUD policies |
+| Retention Policy UI (Admin) | [ ] | Critical | Configure per-data-type retention rules |
+| Automated Retention Job | [ ] | Critical | Cron/scheduled: evaluate policies, execute actions on expired data |
+| User Data Export (GDPR Right to Access) | [ ] | Critical | `GET /api/users/me/export` — Download all personal data as JSON/ZIP |
+| Account Deletion (Right to be Forgotten) | [ ] | Critical | `DELETE /api/users/me` — Anonymize/delete all user data, revoke sessions |
+| Consent Management | [ ] | High | ConsentRecord model: userId, consentType (DATA_PROCESSING/ANALYTICS/MARKETING), grantedAt, revokedAt |
+| Consent UI | [ ] | High | User settings: manage consent preferences |
+| Data Anonymization Engine | [ ] | High | Replace PII with hashed/generic values while preserving aggregate analytics |
+| FERPA Compliance | [ ] | High | Restrict student record access to authorized personnel only. Audit all access. |
+| Deletion Audit Trail | [ ] | High | Log all data deletions/anonymizations in audit log (who, what, when, why) |
+| Retention Dashboard (Admin) | [ ] | Medium | Overview: data volumes by type, upcoming scheduled actions, compliance status |
+| Privacy Policy Integration | [ ] | Medium | Display privacy policy on registration, require acceptance |
+
+**Dependencies:** Phase 1 (Auth system), Phase 8 (Notifications for approval alerts)
+**Database Changes:** New models: MFAConfig, CourseApproval, EmailCampaign, RetentionPolicy, ConsentRecord. Updated: User (mfaEnabled, consentAcceptedAt)
+
+---
+
+## Phase 17: Cross-Role — Calendar, Groups & Collaboration
+
+**Status: NOT STARTED**
+**Priority: MEDIUM-HIGH**
+**Role Focus: ALL ROLES**
+
+> **Scope:** Calendar system (auto-populated from due dates), student groups, and peer review. These features touch all roles and depend on Phase 14-15 data.
+
+### 17.1 Calendar & Due Dates
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| CalendarEvent Model | [ ] | High | title, description, startDate, endDate, allDay (boolean), type (ASSIGNMENT_DUE/ASSESSMENT_OPEN/ASSESSMENT_CLOSE/CONTENT_AVAILABLE/ATTENDANCE_SESSION/CUSTOM), courseId, userId (null = course-wide), color, referenceType, referenceId |
+| Calendar API | [ ] | High | `src/app/api/calendar/route.ts` — List events by date range, course filter |
+| Calendar Page | [ ] | High | `src/app/(dashboard)/calendar/page.tsx` — Monthly/weekly/agenda views |
+| Auto-Event Generation | [ ] | High | Assignment due dates, assessment windows, content availability dates auto-create events |
+| Course Calendar (Instructor) | [ ] | High | View/manage all course events, add custom events |
+| Personal Calendar (Student) | [ ] | High | Aggregate events from all enrolled courses |
+| Upcoming Deadlines Widget | [ ] | High | Dashboard widget: next 7 upcoming items with countdown |
+| iCal Export | [ ] | Medium | `GET /api/calendar/export.ics` — Subscribe from Google Calendar/Outlook |
+| Calendar Event Notifications | [ ] | Medium | Notify 24h and 1h before due dates |
+
+### 17.2 Groups
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| CourseGroup Model | [ ] | High | name, courseId, maxMembers, createdBy, createdAt |
+| GroupMember Model | [ ] | High | groupId, userId, role (LEADER/MEMBER), joinedAt |
+| Groups API | [ ] | High | `src/app/api/courses/[courseId]/groups/route.ts` — CRUD, join/leave, members |
+| Group Assignment Support | [ ] | High | Assignment.isGroupAssignment flag; one submission per group |
+| Auto-Assign Groups | [ ] | Medium | Instructor triggers: random, balanced by performance, self-select |
+| Group Management UI (Instructor) | [ ] | High | Create groups, drag-drop students, set sizes |
+| Group View (Student) | [ ] | High | See group members, group assignment status |
+| Group Discussion Thread | [ ] | Medium | Private forum thread per group |
+
+### 17.3 Peer Review
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| PeerReview Model | [ ] | High | assignmentId, reviewerId, submissionId, rubricScores (JSON), feedback, completedAt, isAnonymous |
+| PeerReviewConfig Model | [ ] | High | assignmentId, reviewsPerStudent, isAnonymous, isDoubleBlind, dueDate, rubricId |
+| Review Distribution API | [ ] | High | Auto-assign submissions to reviewers (round-robin, avoid self-review) |
+| Peer Review UI (Student) | [ ] | High | Review interface: rubric grid + feedback text |
+| Peer Review Results (Student) | [ ] | High | Aggregated peer feedback (anonymized if configured) |
+| Instructor Override | [ ] | Medium | Adjust final grade considering peer reviews |
+| Peer Review Analytics (Instructor) | [ ] | Medium | Review completion rates, inter-rater reliability |
+
+**Dependencies:** Phase 14 (Assignments), Phase 15 (Gradebook for grade integration)
+**Database Changes:** New models: CalendarEvent, CourseGroup, GroupMember, PeerReview, PeerReviewConfig
+
+---
+
+## Phase 18: Cross-Role — Advanced Analytics & Visualizations
+
+**Status: NOT STARTED**
+**Priority: MEDIUM**
+**Role Focus: ALL ROLES (Instructor-heavy)**
+
+> **Scope:** Adds chart library, visual dashboards, grade analytics, and course comparison tools. Read-only layer over existing data — lowest risk phase.
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Chart Library Integration | [ ] | High | Add Recharts for data visualization (lightweight, React-native) |
+| Enrollment Trend Charts | [ ] | High | Line chart: enrollments over time per course |
+| Completion Rate Charts | [ ] | High | Bar/pie: course completion rates comparison |
+| Grade Distribution Histogram | [ ] | High | Per-assignment/assessment/course grade distributions |
+| Student Activity Heatmap | [ ] | Medium | Activity by day/hour grid visualization |
+| Assessment Item Analysis | [ ] | High | Per-question: success rate, discrimination index, point biserial |
+| At-Risk Student Dashboard | [ ] | High | Flag students: no login 7+ days, failing, missed deadlines. Sortable/filterable list. |
+| Course Comparison | [ ] | Medium | Side-by-side metrics across instructor's courses |
+| Instructor Performance Dashboard | [ ] | Medium | Enhanced instructor analytics with all charts |
+| Student Progress Timeline | [ ] | High | Visual timeline: when each lesson/assessment was completed |
+| Cohort Analysis | [ ] | Medium | Compare performance across groups/semesters |
+| Time-on-Task Charts | [ ] | Medium | Visualize telemetry data: time per lesson, video engagement |
+| Export to PDF | [ ] | Medium | Generate PDF reports with embedded charts |
+| Admin Platform Dashboard | [ ] | Medium | Platform-wide charts: user growth, course creation, system health |
+
+**Dependencies:** Phase 14-15 (data sources), Phase 15.6 (telemetry data)
+**Database Changes:** None — read-only from existing models
+
+---
+
+## Phase 19: Integrations & Standards Compliance
+
+**Status: NOT STARTED**
+**Priority: MEDIUM**
+**Role Focus: ADMIN + SYSTEM**
+
+> **Scope:** Institutional integration features: SSO/SAML, developer webhooks/API keys, SCORM import, and competency-based education. Each sub-phase is independent and can be built in any order.
+
+### 19.1 SSO & SAML
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| SAML 2.0 Provider | [ ] | High | Add SAML provider to NextAuth (via `@auth/core` custom provider or `passport-saml`) |
+| SAMLConfig Model | [ ] | High | organizationId, entityId, ssoUrl, sloUrl, certificate, metadataUrl, attributeMapping (JSON), isActive |
+| SAML Configuration API | [ ] | High | Admin CRUD for SAML IdP configs |
+| SAML Admin UI | [ ] | High | Setup wizard: upload metadata or enter URLs manually |
+| IdP-Initiated SSO | [ ] | High | Handle unsolicited SAML responses |
+| SP-Initiated SSO | [ ] | High | Redirect to IdP from login page |
+| Just-in-Time Provisioning | [ ] | Medium | Auto-create user on first SAML login with mapped attributes |
+| Attribute Mapping UI | [ ] | Medium | Map SAML attributes → CiviLabs fields (name, email, role, department) |
+
+### 19.2 Webhooks & Developer API
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Webhook Model | [ ] | High | url, events (string[]), secret, userId, isActive, createdAt, description |
+| WebhookDelivery Model | [ ] | High | webhookId, eventType, payload (JSON), statusCode, responseBody, deliveredAt, attempts |
+| Webhook Events | [ ] | High | enrollment.created, enrollment.completed, assignment.submitted, grade.updated, course.published, assessment.attempted, user.created |
+| Webhook Delivery Engine | [ ] | High | HTTP POST with HMAC-SHA256 signed payload, 10s timeout |
+| Webhook Retry | [ ] | Medium | Exponential backoff: retry at 1m, 5m, 30m, 2h, 12h |
+| Webhook Management API | [ ] | High | CRUD + test delivery endpoint |
+| Webhook Admin UI | [ ] | High | Create/manage webhooks, view delivery logs with status |
+| APIKey Model | [ ] | High | keyHash, name, permissions (string[]), userId, expiresAt, lastUsedAt, isActive |
+| API Key Management | [ ] | High | Generate (show once), revoke, list keys |
+| API Key Auth Middleware | [ ] | High | Authenticate requests via `Authorization: Bearer <api_key>` header |
+| Per-Key Rate Limiting | [ ] | Medium | Configurable rate limits per API key |
+| API Documentation | [ ] | Medium | Auto-generated OpenAPI/Swagger docs page |
+
+### 19.3 SCORM Package Import
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| SCORMPackage Model | [ ] | High | courseId, lessonId, fileName, version (SCORM_12/SCORM_2004), manifestData (JSON), storageUrl, uploadedBy |
+| SCORMData Model | [ ] | High | packageId, userId, cmiData (JSON: core.score, core.lesson_status, core.session_time, suspend_data), lastAccessed |
+| SCORM Upload API | [ ] | High | Upload .zip, extract, parse imsmanifest.xml, validate structure |
+| SCORM Runtime API | [ ] | High | Implement SCORM 1.2 + 2004 RTE API (LMSInitialize, LMSGetValue, LMSSetValue, LMSCommit, LMSFinish) |
+| SCORM Player Component | [ ] | High | iframe loading SCORM content with JS API bridge (window.API / window.API_1484_11) |
+| SCORM Lesson Type | [ ] | High | Add SCORM to LessonType enum |
+| SCORM Progress Sync | [ ] | Medium | Map SCORM completion → UserProgress.isCompleted |
+| SCORM Grade Sync | [ ] | Medium | Map SCORM score → GradeItem in gradebook |
+
+### 19.4 Competency-Based Education
+
+| Feature | Status | Priority | Description |
+|---------|--------|----------|-------------|
+| Competency Model | [ ] | High | title, description, level (BEGINNER/INTERMEDIATE/ADVANCED/EXPERT), domain, parentId (for hierarchy) |
+| CompetencyMapping Model | [ ] | High | competencyId, targetType (COURSE/ASSIGNMENT/ASSESSMENT/RUBRIC_CRITERION), targetId |
+| StudentCompetency Model | [ ] | High | userId, competencyId, masteryLevel (0-100%), evidenceCount, lastAssessedAt |
+| Competency CRUD API | [ ] | High | Admin/Instructor: create competency frameworks |
+| Competency Mapping API | [ ] | High | Link competencies to courses/assignments/assessments |
+| Competency Tracker | [ ] | High | Auto-update mastery based on linked grade items |
+| Competency Dashboard (Student) | [ ] | High | Visual skill map showing mastery per competency |
+| Competency Report (Instructor) | [ ] | High | Class-wide competency matrix |
+| Competency-Based Release | [ ] | Medium | Release condition type: COMPETENCY_MASTERY (integrates with Phase 15.2) |
+
+**Dependencies:** Phase 14-15 (for grade/assessment integration), Phase 7 (file upload for SCORM)
+**Database Changes:** New models: SAMLConfig, Webhook, WebhookDelivery, APIKey, SCORMPackage, SCORMData, Competency, CompetencyMapping, StudentCompetency
+
+---
+
 ## Implementation Roadmap
 
 ```
@@ -650,30 +1278,69 @@ Root Config Files:
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                 ENHANCEMENT WAVE 1                          │
+│                 ENHANCEMENT (COMPLETED)                      │
 ├─────────────────────────────────────────────────────────────┤
-│ Phase 7: File Uploads ──► Phase 8: Notifications           │
+│ Phase 7-9, 11-13: Uploads, Notifications, Learning,        │
+│ Performance, Testing, Analytics                             │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                 ENHANCEMENT WAVE 2                          │
+│         INSTRUCTOR CORE (CRITICAL — Phase 14)               │
 ├─────────────────────────────────────────────────────────────┤
-│ Phase 9: Learning Features ──► Phase 10: Mobile/PWA        │
+│ Unified Assessment System (Quiz+Exam) + Question Types     │
+│ Assignment System + File Submissions                        │
+│ Rubrics + Manual Grading Queue                              │
+│ Student: Assessment Player + Submission UI                  │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                 ENHANCEMENT WAVE 3                          │
+│          INSTRUCTOR CORE (HIGH — Phase 15)                  │
 ├─────────────────────────────────────────────────────────────┤
-│ Phase 11: Performance ──► Phase 12: Testing                │
-└────────────────────── ───────────────────────────────────────┘
+│ Gradebook (Custom Scales, Weighted, Drop Lowest)           │
+│ Content Scheduling + Release Conditions (Brightspace-style)│
+│ Announcements + Attendance + Course Cloning                │
+│ Full Telemetry + Student Activity Reports                  │
+│ Student: Grade View + Lock Indicators + Announcements Feed │
+└─────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      FINAL WAVE                             │
+│            ADMIN CORE (HIGH — Phase 16)                     │
 ├─────────────────────────────────────────────────────────────┤
-│ Phase 13: Analytics & Reporting                             │
+│ MFA (TOTP + Email OTP + Backup Codes)                      │
+│ Course Approval Workflow                                    │
+│ Email Campaigns & Broadcasts                                │
+│ Data Retention (GDPR + FERPA + Configurable Policies)      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│          CROSS-ROLE (MEDIUM-HIGH — Phase 17)                │
+├─────────────────────────────────────────────────────────────┤
+│ Calendar & Due Dates (auto-populated)                      │
+│ Student Groups + Group Assignments                          │
+│ Peer Review System                                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│          CROSS-ROLE (MEDIUM — Phase 18)                     │
+├─────────────────────────────────────────────────────────────┤
+│ Chart Library (Recharts)                                    │
+│ Grade Analytics + At-Risk Flags + Cohort Analysis          │
+│ Activity Heatmaps + Assessment Item Analysis                │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│         INTEGRATIONS (MEDIUM — Phase 19)                    │
+├─────────────────────────────────────────────────────────────┤
+│ SSO/SAML + JIT Provisioning                                │
+│ Webhooks + API Keys + Developer Docs                        │
+│ SCORM 1.2/2004 Import + Player                             │
+│ Competency-Based Education Framework                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -702,6 +1369,10 @@ Root Config Files:
 | Jan 2026      | **Phase 13 COMPLETED** - Instructor Analytics, Student Progress Reports, CSV Export API with Quick Export UI             |
 | Jan 2026      | **Phase 12 COMPLETED** - Jest + RTL setup, 95 tests (API route tests + component tests), environment-aware test setup   |
 | Jan 2026      | **ALL PHASES COMPLETE** - Project at 100% completion (12/13 phases done, Phase 10 intentionally skipped)                 |
+| Jan 2026      | **COMPETITIVE GAP ANALYSIS** - Identified missing features vs Blackboard/Canvas/Moodle/Brightspace                      |
+| Jan 2026      | **ROADMAP EXPANDED** - Added Phase 14-19 with role-based progressive development (Instructor → Admin → Cross-role)      |
+| Jan 2026      | **ARCHITECTURE DECISIONS** - Unified assessment, Brightspace-style conditions, custom grades, enterprise config, full telemetry |
+| Jan 2026      | **USER SETTINGS IMPLEMENTED** - Profile update, password change, notification preferences, privacy settings (student), platform settings (admin), avatar upload (UploadThing), sidebar navigation links, Sonner toast notifications |
 
 ---
 

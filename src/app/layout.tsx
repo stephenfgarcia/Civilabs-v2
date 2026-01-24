@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { ServiceWorkerRegistration } from "@/components/providers/service-worker";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/json-ld";
@@ -120,6 +121,7 @@ export default function RootLayout({
       >
         <SessionProvider>
           {children}
+          <Toaster position="top-right" richColors />
           <ServiceWorkerRegistration />
         </SessionProvider>
       </body>

@@ -98,6 +98,11 @@ const studentRoutes = [
     icon: Award,
     href: "/certificates",
   },
+  {
+    label: "Settings",
+    icon: Settings,
+    href: "/student/settings",
+  },
 ];
 
 const instructorRoutes = [
@@ -146,6 +151,11 @@ const instructorRoutes = [
     icon: Award,
     href: "/certificates",
   },
+  {
+    label: "Settings",
+    icon: Settings,
+    href: "/instructor/settings",
+  },
 ];
 
 const adminRoutes = [
@@ -193,6 +203,11 @@ const adminRoutes = [
     label: "Admin Panel",
     icon: Settings,
     href: "/admin",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    href: "/admin/settings",
   },
 ];
 
