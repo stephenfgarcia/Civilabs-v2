@@ -139,6 +139,7 @@ export default async function CourseEditorPage({ params }: CourseEditorPageProps
         </div>
         <CourseActions
           courseId={course.id}
+          courseTitle={course.title}
           isPublished={course.isPublished}
           canPublish={canPublish}
         />

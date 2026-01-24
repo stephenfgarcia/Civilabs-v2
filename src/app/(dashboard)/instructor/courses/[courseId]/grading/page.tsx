@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  FileText, MessageSquare, CheckCircle, Clock, User,
+  FileText, MessageSquare, CheckCircle, Clock, User, Grid3X3,
 } from "lucide-react";
 
 interface AssessmentAttempt {
@@ -22,6 +22,26 @@ interface AssessmentAttempt {
     chapter: { id: string; title: string };
     questions: Array<{ id: string; text: string; type: string; points: number }>;
   };
+}
+
+interface RubricLevel {
+  label: string;
+  description: string;
+  points: number;
+}
+
+interface RubricCriterion {
+  id: string;
+  title: string;
+  description: string | null;
+  maxPoints: number;
+  levels: RubricLevel[];
+}
+
+interface RubricData {
+  id: string;
+  title: string;
+  criteria: RubricCriterion[];
 }
 
 interface AssignmentSubmission {
@@ -53,6 +73,8 @@ export default function GradingQueuePage({ params }: { params: Promise<{ courseI
   const [gradingItem, setGradingItem] = useState<string | null>(null);
   const [grade, setGrade] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [rubricData, setRubricData] = useState<RubricData | null>(null);
+  const [rubricScores, setRubricScores] = useState<Record<string, { levelIndex: number; points: number; comment: string }>>({});
 
   useEffect(() => {
     fetchQueue();
@@ -73,6 +95,47 @@ export default function GradingQueuePage({ params }: { params: Promise<{ courseI
     }
   }
 
+  async function startGrading(sub: AssignmentSubmission) {
+    setGradingItem(sub.id);
+    setGrade("");
+    setFeedback("");
+    setRubricData(null);
+    setRubricScores({});
+
+    // Load rubric if assignment has one
+    if (sub.assignment.rubricId) {
+      try {
+        const res = await fetch(`/api/courses/${courseId}/rubrics/${sub.assignment.rubricId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRubricData(data);
+        }
+      } catch {
+        // Rubric loading failed, fallback to simple grading
+      }
+    }
+  }
+
+  function selectRubricLevel(criterionId: string, levelIndex: number, points: number) {
+    setRubricScores((prev) => ({
+      ...prev,
+      [criterionId]: { ...prev[criterionId], levelIndex, points, comment: prev[criterionId]?.comment || "" },
+    }));
+    // Auto-calculate total grade from rubric
+    if (rubricData) {
+      const newScores = { ...rubricScores, [criterionId]: { levelIndex, points, comment: rubricScores[criterionId]?.comment || "" } };
+      const total = Object.values(newScores).reduce((sum, s) => sum + s.points, 0);
+      setGrade(String(total));
+    }
+  }
+
+  function setRubricComment(criterionId: string, comment: string) {
+    setRubricScores((prev) => ({
+      ...prev,
+      [criterionId]: { ...prev[criterionId], levelIndex: prev[criterionId]?.levelIndex ?? -1, points: prev[criterionId]?.points ?? 0, comment },
+    }));
+  }
+
   async function gradeSubmission(submissionId: string, assignmentPoints: number) {
     const gradeNum = parseFloat(grade);
     if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > assignmentPoints) {
@@ -85,15 +148,20 @@ export default function GradingQueuePage({ params }: { params: Promise<{ courseI
       const submission = submissions.find((s) => s.id === submissionId);
       if (!submission) return;
 
+      const payload: Record<string, unknown> = {
+        grade: gradeNum,
+        feedback: feedback || undefined,
+      };
+      if (rubricData && Object.keys(rubricScores).length > 0) {
+        payload.rubricScores = rubricScores;
+      }
+
       const res = await fetch(
         `/api/courses/${courseId}/assignments/${submission.assignment.id}/submissions/${submissionId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            grade: gradeNum,
-            feedback: feedback || undefined,
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -226,36 +294,103 @@ export default function GradingQueuePage({ params }: { params: Promise<{ courseI
 
                 {/* Grade form */}
                 {gradingItem === sub.id ? (
-                  <div className="flex items-end gap-3 pt-2 border-t">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Grade (/{sub.assignment.points})</Label>
-                      <Input
-                        type="number"
-                        value={grade}
-                        onChange={(e) => setGrade(e.target.value)}
-                        min={0}
-                        max={sub.assignment.points}
-                        className="w-24"
-                      />
+                  <div className="pt-2 border-t space-y-3">
+                    {/* Rubric Grid (if rubric loaded) */}
+                    {rubricData && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                          <Grid3X3 className="w-3 h-3" />
+                          Rubric: {rubricData.title}
+                        </div>
+                        <div className="overflow-x-auto border rounded">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-muted/50">
+                                <th className="border-r px-2 py-1.5 text-left w-28">Criteria</th>
+                                {rubricData.criteria[0]?.levels.map((l, i) => (
+                                  <th key={i} className="border-r last:border-r-0 px-2 py-1.5 text-center">{l.label}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {rubricData.criteria.map((criterion) => (
+                                <tr key={criterion.id}>
+                                  <td className="border-r border-t px-2 py-1.5">
+                                    <div className="font-medium">{criterion.title}</div>
+                                    {criterion.description && <div className="text-muted-foreground mt-0.5">{criterion.description}</div>}
+                                  </td>
+                                  {criterion.levels.map((level, li) => {
+                                    const isSelected = rubricScores[criterion.id]?.levelIndex === li;
+                                    return (
+                                      <td
+                                        key={li}
+                                        className={`border-r border-t last:border-r-0 px-2 py-1.5 text-center cursor-pointer transition-colors ${
+                                          isSelected ? "bg-blue-100 ring-2 ring-blue-400 ring-inset" : "hover:bg-muted/50"
+                                        }`}
+                                        onClick={() => selectRubricLevel(criterion.id, li, level.points)}
+                                      >
+                                        <div className="font-medium">{level.points} pts</div>
+                                        {level.description && <div className="text-muted-foreground mt-0.5">{level.description}</div>}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {/* Per-criterion comments */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {rubricData.criteria.map((criterion) => (
+                            rubricScores[criterion.id]?.levelIndex >= 0 && (
+                              <div key={criterion.id} className="text-xs">
+                                <label className="text-muted-foreground">{criterion.title} comment:</label>
+                                <input
+                                  type="text"
+                                  className="w-full border rounded px-2 py-0.5 mt-0.5 text-xs"
+                                  placeholder="Optional comment..."
+                                  value={rubricScores[criterion.id]?.comment || ""}
+                                  onChange={(e) => setRubricComment(criterion.id, e.target.value)}
+                                />
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Grade + Feedback row */}
+                    <div className="flex items-end gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Grade (/{sub.assignment.points})</Label>
+                        <Input
+                          type="number"
+                          value={grade}
+                          onChange={(e) => setGrade(e.target.value)}
+                          min={0}
+                          max={sub.assignment.points}
+                          className="w-24"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Feedback</Label>
+                        <Input
+                          value={feedback}
+                          onChange={(e) => setFeedback(e.target.value)}
+                          placeholder="Optional feedback..."
+                        />
+                      </div>
+                      <Button size="sm" onClick={() => gradeSubmission(sub.id, sub.assignment.points)}>
+                        Submit Grade
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setGradingItem(null); setGrade(""); setFeedback(""); setRubricData(null); setRubricScores({}); }}>
+                        Cancel
+                      </Button>
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <Label className="text-xs">Feedback</Label>
-                      <Input
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Optional feedback..."
-                      />
-                    </div>
-                    <Button size="sm" onClick={() => gradeSubmission(sub.id, sub.assignment.points)}>
-                      Submit Grade
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => { setGradingItem(null); setGrade(""); setFeedback(""); }}>
-                      Cancel
-                    </Button>
                   </div>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={() => setGradingItem(sub.id)}>
-                    Grade
+                  <Button size="sm" variant="outline" onClick={() => startGrading(sub)}>
+                    {sub.assignment.rubricId ? <><Grid3X3 className="w-3 h-3 mr-1" />Grade with Rubric</> : "Grade"}
                   </Button>
                 )}
               </div>

@@ -97,6 +97,18 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json(updatedChapter);
     }
 
+    // Schedule update (availableFrom/availableUntil)
+    if (body.availableFrom !== undefined || body.availableUntil !== undefined) {
+      const updatedChapter = await db.chapter.update({
+        where: { id: chapterId },
+        data: {
+          availableFrom: body.availableFrom ? new Date(body.availableFrom) : null,
+          availableUntil: body.availableUntil ? new Date(body.availableUntil) : null,
+        },
+      });
+      return NextResponse.json(updatedChapter);
+    }
+
     // Full chapter update
     const validatedData = chapterSchema.safeParse(body);
 

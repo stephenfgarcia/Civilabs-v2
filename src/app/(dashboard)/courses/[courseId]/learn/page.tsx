@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { LessonViewer } from "@/components/learn/lesson-viewer";
 import { CourseSidebar } from "@/components/learn/course-sidebar";
+import { evaluateReleaseConditions } from "@/lib/release-conditions";
 
 interface LearnPageProps {
   params: Promise<{ courseId: string }>;
@@ -116,6 +117,34 @@ export default async function LearnPage({ params, searchParams }: LearnPageProps
     getQuizAttempts(session.user.id, allQuizIds),
   ]);
 
+  // Evaluate release conditions for all content items
+  const lockedItems = new Map<string, string[]>();
+  const conditionChecks: Promise<void>[] = [];
+
+  for (const chapter of course.chapters) {
+    conditionChecks.push(
+      evaluateReleaseConditions(session.user.id, courseId, "CHAPTER", chapter.id).then(
+        (result) => {
+          if (!result.accessible) {
+            lockedItems.set(chapter.id, result.reasons);
+          }
+        }
+      )
+    );
+    for (const lesson of chapter.lessons) {
+      conditionChecks.push(
+        evaluateReleaseConditions(session.user.id, courseId, "LESSON", lesson.id).then(
+          (result) => {
+            if (!result.accessible) {
+              lockedItems.set(lesson.id, result.reasons);
+            }
+          }
+        )
+      );
+    }
+  }
+  await Promise.all(conditionChecks);
+
   // Find current lesson
   let currentLesson = allLessons.find((l) => l.id === lessonId);
   if (!currentLesson && allLessons.length > 0) {
@@ -160,6 +189,7 @@ export default async function LearnPage({ params, searchParams }: LearnPageProps
         completedLessons={completedLessons}
         passedQuizzes={passedQuizzes}
         progressPercentage={progressPercentage}
+        lockedItems={Object.fromEntries(lockedItems)}
       />
 
       {/* Main Content */}

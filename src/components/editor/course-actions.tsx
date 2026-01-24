@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Eye, EyeOff, Trash2, MoreVertical } from "lucide-react";
+import { Loader2, Eye, EyeOff, Trash2, MoreVertical, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,20 +11,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CourseCloneDialog } from "./course-clone-dialog";
 
 interface CourseActionsProps {
   courseId: string;
+  courseTitle: string;
   isPublished: boolean;
   canPublish: boolean;
 }
 
 export function CourseActions({
   courseId,
+  courseTitle,
   isPublished,
   canPublish,
 }: CourseActionsProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
 
   const handlePublish = async () => {
     setIsLoading(true);
@@ -101,6 +105,10 @@ export function CourseActions({
             <Eye className="mr-2 h-4 w-4" />
             Preview Course
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowCloneDialog(true)}>
+            <Copy className="mr-2 h-4 w-4" />
+            Clone Course
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={handleDelete}
@@ -111,6 +119,13 @@ export function CourseActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <CourseCloneDialog
+        courseId={courseId}
+        courseTitle={courseTitle}
+        open={showCloneDialog}
+        onClose={() => setShowCloneDialog(false)}
+      />
     </div>
   );
 }

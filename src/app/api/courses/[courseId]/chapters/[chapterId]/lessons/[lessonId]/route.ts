@@ -80,6 +80,19 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json();
+
+    // Schedule update (availableFrom/availableUntil)
+    if (body.availableFrom !== undefined || body.availableUntil !== undefined) {
+      const updatedLesson = await db.lesson.update({
+        where: { id: lessonId },
+        data: {
+          availableFrom: body.availableFrom ? new Date(body.availableFrom) : null,
+          availableUntil: body.availableUntil ? new Date(body.availableUntil) : null,
+        },
+      });
+      return NextResponse.json(updatedLesson);
+    }
+
     const validatedData = lessonSchema.partial().safeParse(body);
 
     if (!validatedData.success) {

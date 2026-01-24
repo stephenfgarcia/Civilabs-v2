@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Menu,
   X,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -48,6 +49,7 @@ interface CourseSidebarProps {
   completedLessons: Set<string>;
   passedQuizzes: Set<string>;
   progressPercentage: number;
+  lockedItems?: Record<string, string[]>;
 }
 
 const lessonTypeIcons = {
@@ -65,6 +67,7 @@ export function CourseSidebar({
   completedLessons,
   passedQuizzes,
   progressPercentage,
+  lockedItems = {},
 }: CourseSidebarProps) {
   const router = useRouter();
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(
@@ -136,24 +139,39 @@ export function CourseSidebar({
             {/* Lessons */}
             {expandedChapters.has(chapter.id) && (
               <div className="pb-2">
+                {/* Chapter-level lock indicator */}
+                {lockedItems[chapter.id] && (
+                  <div className="mx-4 mb-1 px-2 py-1 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700 flex items-center gap-1.5">
+                    <Lock className="h-3 w-3 flex-shrink-0" />
+                    <span className="line-clamp-1">{lockedItems[chapter.id][0]}</span>
+                  </div>
+                )}
                 {chapter.lessons.map((lesson) => {
                   const LessonIcon =
                     lessonTypeIcons[lesson.type as keyof typeof lessonTypeIcons] ||
                     FileText;
                   const isCompleted = completedLessons.has(lesson.id);
                   const isCurrent = lesson.id === currentLessonId;
+                  const isLocked = !!lockedItems[lesson.id] || !!lockedItems[chapter.id];
+                  const lockReasons = lockedItems[lesson.id] || lockedItems[chapter.id];
 
                   return (
                     <button
                       key={lesson.id}
-                      onClick={() => handleLessonClick(lesson.id)}
+                      onClick={() => !isLocked && handleLessonClick(lesson.id)}
+                      disabled={isLocked}
+                      title={isLocked ? lockReasons?.join(", ") : undefined}
                       className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                        isCurrent
-                          ? "bg-primary/10 text-primary border-l-2 border-primary"
-                          : "hover:bg-muted/50"
+                        isLocked
+                          ? "opacity-50 cursor-not-allowed"
+                          : isCurrent
+                            ? "bg-primary/10 text-primary border-l-2 border-primary"
+                            : "hover:bg-muted/50"
                       }`}
                     >
-                      {isCompleted ? (
+                      {isLocked ? (
+                        <Lock className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                      ) : isCompleted ? (
                         <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                       ) : (
                         <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
