@@ -440,6 +440,41 @@ export const batchConsentSchema = z.object({
   consents: z.array(consentSchema).min(1).max(10),
 });
 
+// ==================== PHASE 17: Calendar & Groups ====================
+
+// Calendar Events
+export const calendarEventSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime().optional(),
+  allDay: z.boolean().optional().default(false),
+  type: z.enum(["ASSIGNMENT_DUE", "ASSESSMENT_OPEN", "ASSESSMENT_CLOSE", "CONTENT_AVAILABLE", "ATTENDANCE_SESSION", "CUSTOM"]).optional().default("CUSTOM"),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  courseId: z.string().optional(),
+});
+
+export const calendarEventUpdateSchema = calendarEventSchema.partial();
+
+// Groups
+export const courseGroupSchema = z.object({
+  name: z.string().min(1).max(100),
+  maxMembers: z.number().int().min(2).max(50).optional().default(5),
+});
+
+export const courseGroupUpdateSchema = courseGroupSchema.partial();
+
+export const groupMemberSchema = z.object({
+  userId: z.string(),
+  role: z.enum(["LEADER", "MEMBER"]).optional().default("MEMBER"),
+});
+
+export const autoAssignGroupsSchema = z.object({
+  strategy: z.enum(["RANDOM", "BALANCED"]),
+  groupSize: z.number().int().min(2).max(50),
+  groupNamePrefix: z.string().min(1).max(50).optional().default("Group"),
+});
+
 // Type exports
 export type GradeCategoryInput = z.infer<typeof gradeCategorySchema>;
 export type GradeItemInput = z.infer<typeof gradeItemSchema>;
@@ -456,3 +491,7 @@ export type CourseApprovalReviewInput = z.infer<typeof courseApprovalReviewSchem
 export type EmailCampaignInput = z.infer<typeof emailCampaignSchema>;
 export type RetentionPolicyInput = z.infer<typeof retentionPolicySchema>;
 export type ConsentInput = z.infer<typeof consentSchema>;
+export type CalendarEventInput = z.infer<typeof calendarEventSchema>;
+export type CourseGroupInput = z.infer<typeof courseGroupSchema>;
+export type GroupMemberInput = z.infer<typeof groupMemberSchema>;
+export type AutoAssignGroupsInput = z.infer<typeof autoAssignGroupsSchema>;

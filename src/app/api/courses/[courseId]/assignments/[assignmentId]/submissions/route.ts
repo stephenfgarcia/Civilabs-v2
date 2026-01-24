@@ -109,11 +109,50 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Check submission limit
+    // Handle group assignment logic
+    let groupId: string | null = null;
+    if (assignment.isGroupAssignment) {
+      const membership = await db.groupMember.findFirst({
+        where: {
+          userId: session.user.id,
+          group: { courseId },
+        },
+        include: { group: true },
+      });
+
+      if (!membership) {
+        return NextResponse.json(
+          { message: "You must be in a group to submit a group assignment" },
+          { status: 403 }
+        );
+      }
+
+      groupId = membership.groupId;
+
+      // For group assignments, check if group already submitted
+      const groupSubmissions = await db.assignmentSubmission.count({
+        where: {
+          assignmentId,
+          groupId,
+          status: { not: "DRAFT" },
+        },
+      });
+
+      if (groupSubmissions >= assignment.maxSubmissions) {
+        return NextResponse.json(
+          { message: `Your group has reached the maximum submissions (${assignment.maxSubmissions})` },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Check submission limit (individual)
     const existingSubmissions = await db.assignmentSubmission.count({
       where: {
         assignmentId,
-        userId: session.user.id,
+        ...(assignment.isGroupAssignment
+          ? { groupId }
+          : { userId: session.user.id }),
         status: { not: "DRAFT" },
       },
     });
@@ -181,6 +220,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       data: {
         assignmentId,
         userId: session.user.id,
+        groupId,
         status: "SUBMITTED",
         submissionNumber: existingSubmissions + 1,
         fileUrl: data.fileUrl ?? null,

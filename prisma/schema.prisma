@@ -59,6 +59,9 @@ model User {
   activities             UserActivity[]
   mfaConfig             MFAConfig?
   consents              ConsentRecord[]
+  calendarEvents        CalendarEvent[]
+  groupMemberships      GroupMember[]
+  calendarTokens        CalendarToken[]
 
   @@index([role])
   @@index([createdAt])
@@ -153,6 +156,8 @@ model Course {
   announcements      Announcement[]
   attendanceSessions AttendanceSession[]
   approval           CourseApproval?
+  calendarEvents     CalendarEvent[]
+  groups             CourseGroup[]
 
   @@index([instructorId])
   @@index([categoryId])
@@ -455,6 +460,7 @@ model AssignmentSubmission {
   userId          String
   status          SubmissionStatus @default(DRAFT)
   submissionNumber Int             @default(1) // Which attempt this is
+  groupId         String?          // If group assignment, which group submitted
 
   // Submission content (varies by assignment type)
   fileUrl         String?
@@ -479,13 +485,15 @@ model AssignmentSubmission {
   updatedAt       DateTime         @updatedAt
 
   // Relations
-  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignment Assignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group      CourseGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   @@index([assignmentId])
   @@index([userId])
   @@index([status])
   @@index([assignmentId, userId])
+  @@index([groupId])
   @@map("assignment_submissions")
 }
 
@@ -768,6 +776,9 @@ enum NotificationType {
   COURSE_REJECTED     // Course rejected by admin
   COURSE_REVIEW_REQUESTED // Course submitted for admin review
   MFA_ENABLED_NOTICE  // MFA has been enabled on account
+  CALENDAR_REMINDER   // Calendar event reminder (24h/1h before)
+  GROUP_INVITATION    // Invited to join a course group
+  GROUP_SUBMISSION    // Group member submitted on your behalf
 }
 
 model Notification {
@@ -1012,6 +1023,18 @@ enum AuditAction {
   USER_DATA_DELETED
   CONSENT_GRANTED
   CONSENT_REVOKED
+
+  // Calendar (Phase 17)
+  CALENDAR_EVENT_CREATED
+  CALENDAR_EVENT_UPDATED
+  CALENDAR_EVENT_DELETED
+
+  // Groups (Phase 17)
+  GROUP_CREATED
+  GROUP_UPDATED
+  GROUP_DELETED
+  GROUP_MEMBER_ADDED
+  GROUP_MEMBER_REMOVED
 
   // Admin Actions
   SETTINGS_CHANGED
@@ -1457,4 +1480,101 @@ model ConsentRecord {
   @@index([userId])
   @@index([consentType])
   @@map("consent_records")
+}
+
+// ==================== CALENDAR SYSTEM (Phase 17) ====================
+
+enum CalendarEventType {
+  ASSIGNMENT_DUE
+  ASSESSMENT_OPEN
+  ASSESSMENT_CLOSE
+  CONTENT_AVAILABLE
+  ATTENDANCE_SESSION
+  CUSTOM
+}
+
+model CalendarEvent {
+  id            String            @id @default(cuid())
+  title         String
+  description   String?           @db.Text
+  startDate     DateTime
+  endDate       DateTime?
+  allDay        Boolean           @default(false)
+  type          CalendarEventType @default(CUSTOM)
+  color         String?           // Hex color for UI display
+  courseId       String?           // null = personal event
+  userId        String?           // null = course-wide event
+  referenceType String?           // "Assignment", "Quiz", "Chapter", "Lesson", "AttendanceSession"
+  referenceId   String?           // ID of the referenced entity
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Relations
+  course        Course?           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user          User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([userId])
+  @@index([startDate])
+  @@index([type])
+  @@index([referenceType, referenceId])
+  @@map("calendar_events")
+}
+
+model CalendarToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Unique token for iCal subscription URL
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([token])
+  @@map("calendar_tokens")
+}
+
+// ==================== GROUPS SYSTEM (Phase 17) ====================
+
+enum GroupRole {
+  LEADER
+  MEMBER
+}
+
+model CourseGroup {
+  id          String   @id @default(cuid())
+  name        String
+  courseId     String
+  maxMembers  Int      @default(5)
+  createdBy   String   // Instructor who created it
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course      Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  members     GroupMember[]
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([createdBy])
+  @@map("course_groups")
+}
+
+model GroupMember {
+  id        String    @id @default(cuid())
+  groupId   String
+  userId    String
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  // Relations
+  group     CourseGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@map("group_members")
 }
