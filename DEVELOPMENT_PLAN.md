@@ -1,7 +1,7 @@
 # CiviLabs LMS - Development Plan & Progress Tracker
 
 > **Last Updated:** January 2026
-> **Overall Progress:** Phase 1-9, 11-19 Complete | Production Ready & Deployed
+> **Overall Progress:** Phase 1-9, 11-19 + Sprint A Complete | Production Ready & Deployed
 
 ---
 
@@ -495,15 +495,17 @@ Root Config Files:
 | Phase 17           | Cross-Role: Calendar, Groups & Collab     | COMPLETED   | 100%  |
 | Phase 18           | Cross-Role: Advanced Analytics & Charts   | COMPLETED   | 100%  |
 | Phase 19           | Integrations: Webhooks & API Keys         | COMPLETED   | 100%  |
+| Sprint A           | UI Completion (6 deferred UI items)       | COMPLETED   | 100%  |
 | User Settings      | Profile, Password, Notifications, Privacy, Platform | COMPLETED | 100% |
 | Production Ready   | Error Tracking, Rate Limit         | COMPLETED   | 100%       |
 | Deployment         | Vercel, Domain, OAuth              | COMPLETED   | 100%       |
 
 **Core Features (Phase 1-13): 100% Complete**
-**Competitive Parity Features (Phase 14-19): 67% Complete (4/6 phases)**
+**Competitive Parity Features (Phase 14-19): 100% Complete**
+**Sprint A (UI Completion): 100% Complete**
 **Production Readiness: 100%**
 **Deployment: 100% (Live at civilabsreview.com)**
-**Overall Project Completion: 89% (17/19 phases complete, Phase 10 skipped)**
+**Overall Project Completion: 92% (All phases + Sprint A complete)**
 
 ---
 
@@ -924,9 +926,9 @@ Before starting Phase 14, the following must be addressed:
 | Rubric Model (Prisma) | [x] | High | title, description, courseId, isTemplate, createdBy |
 | RubricCriterion Model | [x] | High | rubricId, title, description, position, maxPoints, levels (JSON: [{label, description, points}]) |
 | Rubric CRUD API | [x] | High | Full CRUD with nested criteria at `src/app/api/courses/[courseId]/rubrics/` |
-| Rubric Builder UI | [ ] | High | Deferred — Visual grid builder (API ready, UI in future phase) |
+| Rubric Builder UI | [x] | High | Sprint A — Visual grid builder at /instructor/courses/[id]/rubrics |
 | Rubric-Assignment Link | [x] | High | rubricId on Assignment model; rubricScores JSON on submission |
-| Rubric Grading UI | [ ] | High | Deferred — Click cells to grade (API supports rubricScores already) |
+| Rubric Grading UI | [x] | High | Sprint A — Click-to-grade rubric grid in grading page |
 | Rubric Template Library | [ ] | Medium | Deferred — isTemplate flag ready on model |
 | Rubric PDF Export | [ ] | Low | Deferred |
 
@@ -995,9 +997,9 @@ Before starting Phase 14, the following must be addressed:
 | Release Condition API | [x] | Critical | CRUD at `/api/courses/[courseId]/release-conditions` |
 | Release Condition Evaluator | [x] | Critical | `src/lib/release-conditions.ts` — evaluateReleaseConditions() with AND/OR logic |
 | Availability Window Check | [x] | High | checkAvailabilityWindow() utility for date-based scheduling |
-| Schedule Editor UI (Instructor) | [ ] | High | Deferred — Visual condition builder UI |
-| Condition Builder UI | [ ] | High | Deferred — AND/OR condition tree editor |
-| Student Lock Indicators | [ ] | High | Deferred — Lock icons in sidebar |
+| Schedule Editor UI (Instructor) | [x] | High | Sprint A — /instructor/courses/[id]/schedule |
+| Condition Builder UI | [x] | High | Sprint A — AND/OR tree at /instructor/courses/[id]/conditions |
+| Student Lock Indicators | [x] | High | Sprint A — Lock icons + disabled state in course sidebar |
 | Scheduling Overview (Instructor) | [ ] | Medium | Deferred — Timeline view |
 
 ### 15.3 Announcements
@@ -1034,7 +1036,7 @@ Before starting Phase 14, the following must be addressed:
 |---------|--------|----------|-------------|
 | Course Clone API | [x] | High | `POST /api/courses/[courseId]/clone` — Deep copy with configurable scope |
 | Clone Scope | [x] | High | Copies: chapters, lessons, assignments, assessments/questions, rubrics/criteria, release conditions, announcements. Skips: enrollments, submissions, grades, attempts |
-| Clone Options UI | [ ] | High | Deferred — Frontend dialog (API fully functional via direct call) |
+| Clone Options UI | [x] | High | Sprint A — Clone dialog with options in course editor actions |
 | Date Shift | [x] | Medium | dateShiftDays parameter shifts all due dates and availability windows |
 
 ### 15.6 Student Activity Reports & Telemetry
@@ -1378,6 +1380,34 @@ Before starting Phase 14, the following must be addressed:
 
 **Dependencies:** Phase 14-15 (for grade/assessment integration), Phase 7 (file upload for SCORM)
 **Database Changes:** New models: SAMLConfig, Webhook, WebhookDelivery, APIKey, SCORMPackage, SCORMData, Competency, CompetencyMapping, StudentCompetency
+
+---
+
+## Sprint A: UI Completion
+
+**Status: COMPLETED**
+
+Addresses 6 high-priority deferred UI items that had backend APIs ready but no frontend.
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Rubric Builder UI | [x] | Visual grid builder — create/edit/delete/duplicate rubrics with criteria × levels grid |
+| Rubric Grading UI | [x] | Click-to-grade rubric grid in assignment grading page, auto-calculates total |
+| Release Condition Builder UI | [x] | AND/OR visual tree editor, 7 condition types, target selector |
+| Student Lock Indicators | [x] | Lock icons on locked lessons/chapters in course sidebar, disabled interaction |
+| Course Clone Dialog | [x] | Frontend dialog with checkboxes (assignments, assessments, rubrics, conditions, announcements) + date shift |
+| Schedule Editor UI | [x] | availableFrom/availableUntil date pickers for chapters and lessons |
+
+### Key Files (Sprint A)
+- `src/app/(dashboard)/instructor/courses/[courseId]/rubrics/page.tsx` — Rubric Builder
+- `src/app/(dashboard)/instructor/courses/[courseId]/grading/page.tsx` — Enhanced with rubric grading
+- `src/app/(dashboard)/instructor/courses/[courseId]/conditions/page.tsx` — Release Condition Builder
+- `src/app/(dashboard)/instructor/courses/[courseId]/schedule/page.tsx` — Schedule Editor
+- `src/components/editor/course-clone-dialog.tsx` — Clone Course Dialog
+- `src/components/learn/course-sidebar.tsx` — Lock indicators (Lock icon, disabled state)
+- `src/app/(dashboard)/courses/[courseId]/learn/page.tsx` — Release condition evaluation
+
+**Completion Date:** January 2026
 
 ---
 
