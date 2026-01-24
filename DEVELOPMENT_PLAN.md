@@ -1,7 +1,7 @@
 # CiviLabs LMS - Development Plan & Progress Tracker
 
 > **Last Updated:** January 2026
-> **Overall Progress:** Phase 1-9, 11-17 Complete | Production Ready & Deployed
+> **Overall Progress:** Phase 1-9, 11-18 Complete | Production Ready & Deployed
 
 ---
 
@@ -459,8 +459,8 @@ Root Config Files:
 - **CourseGroup** - Student groups within courses with max member limits
 - **GroupMember** - Group membership with LEADER/MEMBER roles
 
-**Phase 18 — Analytics:**
-- No new models (read-only visualization layer)
+**Phase 18 — Analytics (COMPLETED):**
+- No new models (read-only visualization layer over existing data)
 
 **Phase 19 — Integrations:**
 - **SAMLConfig** - SAML/SSO configuration per organization
@@ -496,7 +496,7 @@ Root Config Files:
 | Phase 15           | Instructor Core: Gradebook & Scheduling   | COMPLETED   | 100%  |
 | Phase 16           | Admin Core: Security & Compliance         | COMPLETED   | 100%  |
 | Phase 17           | Cross-Role: Calendar, Groups & Collab     | COMPLETED   | 100%  |
-| Phase 18           | Cross-Role: Advanced Analytics & Charts   | NOT STARTED | 0%    |
+| Phase 18           | Cross-Role: Advanced Analytics & Charts   | COMPLETED   | 100%  |
 | Phase 19           | Integrations: SSO, SCORM, Webhooks        | NOT STARTED | 0%    |
 | User Settings      | Profile, Password, Notifications, Privacy, Platform | COMPLETED | 100% |
 | Production Ready   | Error Tracking, Rate Limit         | COMPLETED   | 100%       |
@@ -1268,7 +1268,7 @@ Before starting Phase 14, the following must be addressed:
 
 ## Phase 18: Cross-Role — Advanced Analytics & Visualizations
 
-**Status: NOT STARTED**
+**Status: COMPLETED**
 **Priority: MEDIUM**
 **Role Focus: ALL ROLES (Instructor-heavy)**
 
@@ -1276,23 +1276,33 @@ Before starting Phase 14, the following must be addressed:
 
 | Feature | Status | Priority | Description |
 |---------|--------|----------|-------------|
-| Chart Library Integration | [ ] | High | Add Recharts for data visualization (lightweight, React-native) |
-| Enrollment Trend Charts | [ ] | High | Line chart: enrollments over time per course |
-| Completion Rate Charts | [ ] | High | Bar/pie: course completion rates comparison |
-| Grade Distribution Histogram | [ ] | High | Per-assignment/assessment/course grade distributions |
-| Student Activity Heatmap | [ ] | Medium | Activity by day/hour grid visualization |
-| Assessment Item Analysis | [ ] | High | Per-question: success rate, discrimination index, point biserial |
-| At-Risk Student Dashboard | [ ] | High | Flag students: no login 7+ days, failing, missed deadlines. Sortable/filterable list. |
-| Course Comparison | [ ] | Medium | Side-by-side metrics across instructor's courses |
-| Instructor Performance Dashboard | [ ] | Medium | Enhanced instructor analytics with all charts |
-| Student Progress Timeline | [ ] | High | Visual timeline: when each lesson/assessment was completed |
-| Cohort Analysis | [ ] | Medium | Compare performance across groups/semesters |
-| Time-on-Task Charts | [ ] | Medium | Visualize telemetry data: time per lesson, video engagement |
-| Export to PDF | [ ] | Medium | Generate PDF reports with embedded charts |
-| Admin Platform Dashboard | [ ] | Medium | Platform-wide charts: user growth, course creation, system health |
+| Chart Library Integration | [x] | High | Recharts installed for data visualization |
+| Enrollment Trend Charts | [x] | High | Line chart: enrollments over time per course (90 days) |
+| Completion Rate Charts | [x] | High | Bar chart: course completion rates comparison |
+| Grade Distribution Histogram | [x] | High | Per-course grade distributions in 10% buckets |
+| Student Activity Heatmap | [x] | Medium | 7×24 activity grid (day × hour) from UserActivity data |
+| Assessment Item Analysis | [x] | High | Per-question success rate and difficulty classification |
+| At-Risk Student Dashboard | [x] | High | Multi-factor detection: inactive 7+ days, progress <30%, missed assignments. Sortable/filterable. |
+| Course Comparison | [x] | Medium | Bar chart: enrollment vs completion across courses |
+| Instructor Performance Dashboard | [x] | Medium | Tabbed analytics: overview, grades, time-on-task, item analysis |
+| Student Progress Timeline | [x] | High | Unified chronological feed: lessons, quizzes, submissions, enrollments |
+| Cohort Analysis | [-] | Medium | Deferred — requires group/semester tracking enhancements |
+| Time-on-Task Charts | [x] | Medium | Bar chart from telemetry: average time per lesson |
+| Export to PDF | [-] | Medium | Deferred to future phase |
+| Admin Platform Dashboard | [x] | Medium | User growth, role distribution, enrollment trends, activity heatmap |
 
 **Dependencies:** Phase 14-15 (data sources), Phase 15.6 (telemetry data)
 **Database Changes:** None — read-only from existing models
+
+### Key Files
+- `src/app/api/courses/[courseId]/analytics/route.ts` — Course-level analytics API (6 types)
+- `src/app/api/analytics/platform/route.ts` — Platform-wide analytics API (admin)
+- `src/app/api/analytics/at-risk/route.ts` — At-risk student detection API
+- `src/app/api/analytics/progress-timeline/route.ts` — Student progress timeline API
+- `src/components/charts/` — Reusable chart components (LineChart, BarChart, PieChart, ActivityHeatmap, ProgressTimeline)
+- `src/app/(dashboard)/instructor/courses/[courseId]/analytics/page.tsx` — Instructor course analytics
+- `src/app/(dashboard)/instructor/at-risk/page.tsx` — At-risk students page
+- `src/app/(dashboard)/admin/analytics/charts/page.tsx` — Admin platform charts
 
 ---
 
@@ -1478,6 +1488,7 @@ Before starting Phase 14, the following must be addressed:
 | Jan 2026      | **Phase 15 COMPLETED** - Gradebook, Scheduling & Course Management: weighted gradebook with categories/items/grades/export, Brightspace-style release conditions with AND/OR evaluator, announcements (course + global), attendance tracking with roll-call UI, deep course cloning with date shift, student activity telemetry with at-risk detection, instructor dashboards (gradebook/announcements/attendance/activity), student views (grades/announcements), 97 tests passing, clean build |
 | Jan 2026      | **Phase 16 COMPLETED** - Admin Core: Security, Compliance & Platform Management: Email OTP MFA with backup codes and lockout, course approval workflow with review queue, email campaigns with recipient segmentation and batch sending via Resend, data retention policies with Vercel cron automation, GDPR compliance (data export, account deletion with anonymization, consent management), admin dashboards (MFA stats, review queue, campaigns, retention), user settings (MFA form, consent/privacy toggles), 97 tests passing, clean build |
 | Jan 2026      | **Phase 17 COMPLETED** - Calendar, Groups & Collaboration: FullCalendar integration (month/week/agenda views), calendar API with CRUD and date range filtering, auto-event sync from assignments/assessments/attendance/chapters, iCal subscription URL (unique per-user token, dynamic sync with Google Calendar/Outlook), upcoming deadlines widget, course groups system (CRUD + member management), auto-assign groups (random or balanced by progress with snake-draft), group assignment support (one submission per group, shared grade), instructor group management UI, student group view, peer review deferred to future phase, 97 tests passing, clean build |
+| Jan 2026      | **Phase 18 COMPLETED** - Advanced Analytics & Visualizations: Recharts integration, course-level analytics API (enrollment trends, grade distribution, item analysis, time-on-task, completion rates), platform-wide analytics API (user growth, course stats, enrollment trends, activity summary), at-risk student detection API (multi-factor: inactive 7+ days, progress <30% after 14 days, missed assignments), student progress timeline API (unified chronological feed), reusable chart components (LineChart, BarChart, PieChart, ActivityHeatmap, ProgressTimeline), instructor course analytics dashboard with tabbed views, at-risk students standalone page with filters and sortable table, admin platform charts dashboard (user growth, role distribution pie, enrollment trends, activity heatmap, course comparison), cohort analysis and PDF export deferred, 97 tests passing, clean build |
 
 ---
 
