@@ -495,3 +495,47 @@ export type CalendarEventInput = z.infer<typeof calendarEventSchema>;
 export type CourseGroupInput = z.infer<typeof courseGroupSchema>;
 export type GroupMemberInput = z.infer<typeof groupMemberSchema>;
 export type AutoAssignGroupsInput = z.infer<typeof autoAssignGroupsSchema>;
+
+// ==================== WEBHOOKS & API KEYS (Phase 19) ====================
+
+const webhookEvents = [
+  "ENROLLMENT_CREATED",
+  "ENROLLMENT_COMPLETED",
+  "ASSIGNMENT_SUBMITTED",
+  "GRADE_UPDATED",
+  "COURSE_PUBLISHED",
+  "ASSESSMENT_ATTEMPTED",
+  "USER_CREATED",
+] as const;
+
+export const webhookSchema = z.object({
+  url: z.string().url("Must be a valid URL").max(2048),
+  description: z.string().max(255).optional(),
+  events: z.array(z.enum(webhookEvents)).min(1, "At least one event is required"),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const webhookUpdateSchema = z.object({
+  url: z.string().url("Must be a valid URL").max(2048).optional(),
+  description: z.string().max(255).optional(),
+  events: z.array(z.enum(webhookEvents)).min(1).optional(),
+  isActive: z.boolean().optional(),
+});
+
+const apiKeyPermissions = [
+  "COURSES",
+  "ENROLLMENTS",
+  "GRADES",
+  "USERS",
+  "ANALYTICS",
+] as const;
+
+export const apiKeySchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  permissions: z.array(z.enum(apiKeyPermissions)).min(1, "At least one permission is required"),
+  expiresAt: z.string().datetime().optional(), // ISO date string
+});
+
+export type WebhookInput = z.infer<typeof webhookSchema>;
+export type WebhookUpdateInput = z.infer<typeof webhookUpdateSchema>;
+export type APIKeyInput = z.infer<typeof apiKeySchema>;

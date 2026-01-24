@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { registerSchema } from "@/lib/validations";
 import { sendWelcomeEmail } from "@/lib/email";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 export async function POST(request: Request) {
   try {
@@ -45,6 +46,12 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
       },
+    });
+
+    dispatchWebhookEvent("USER_CREATED", {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
     });
 
     // Send welcome email (non-blocking)

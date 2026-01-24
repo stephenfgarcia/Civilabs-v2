@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEnrollmentEmail } from "@/lib/email";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 // GET /api/enrollments - Get user's enrollments
 export async function GET() {
@@ -180,6 +181,14 @@ export async function POST(request: Request) {
         userId: session.user.id,
         courseId,
       },
+    });
+
+    // Dispatch webhook event
+    dispatchWebhookEvent("ENROLLMENT_CREATED", {
+      enrollmentId: enrollment.id,
+      userId: session.user.id,
+      courseId,
+      courseTitle: course.title,
     });
 
     // Send enrollment confirmation email (non-blocking)

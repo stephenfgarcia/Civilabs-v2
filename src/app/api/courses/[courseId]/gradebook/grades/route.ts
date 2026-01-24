@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { studentGradeSchema } from "@/lib/validations";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 interface RouteParams {
   params: Promise<{ courseId: string }>;
@@ -69,6 +70,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         }),
         gradedAt: new Date(),
       },
+    });
+
+    dispatchWebhookEvent("GRADE_UPDATED", {
+      gradeId: grade.id,
+      gradeItemId,
+      userId,
+      courseId,
+      score: grade.score,
+      overrideScore: grade.overrideScore,
     });
 
     return NextResponse.json(grade);

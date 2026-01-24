@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { assignmentSubmissionSchema } from "@/lib/validations";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 interface RouteParams {
   params: Promise<{ courseId: string; assignmentId: string }>;
@@ -232,6 +233,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         isLate,
         latePenaltyApplied,
       },
+    });
+
+    dispatchWebhookEvent("ASSIGNMENT_SUBMITTED", {
+      submissionId: submission.id,
+      assignmentId,
+      userId: session.user.id,
+      courseId,
+      isLate,
     });
 
     return NextResponse.json(submission, { status: 201 });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendQuizResultEmail } from "@/lib/email";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 interface RouteParams {
   params: Promise<{ courseId: string; chapterId: string }>;
@@ -324,6 +325,15 @@ export async function POST(request: Request, { params }: RouteParams) {
         totalPoints,
         needsManualGrading,
       },
+    });
+
+    dispatchWebhookEvent("ASSESSMENT_ATTEMPTED", {
+      attemptId: attempt.id,
+      quizId: quiz.id,
+      userId: session.user.id,
+      courseId,
+      score,
+      passed,
     });
 
     // Send quiz result email (non-blocking, only if auto-gradeable)

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 interface RouteParams {
   params: Promise<{ courseId: string }>;
@@ -60,6 +61,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       where: { id: courseId },
       data: { isPublished },
     });
+
+    // Dispatch webhook when course is published
+    if (isPublished) {
+      dispatchWebhookEvent("COURSE_PUBLISHED", {
+        courseId,
+        title: updatedCourse.title,
+        instructorId: session.user.id,
+      });
+    }
 
     return NextResponse.json(updatedCourse);
   } catch (error) {

@@ -62,6 +62,8 @@ model User {
   calendarEvents        CalendarEvent[]
   groupMemberships      GroupMember[]
   calendarTokens        CalendarToken[]
+  webhooks              Webhook[]
+  apiKeys               APIKey[]
 
   @@index([role])
   @@index([createdAt])
@@ -1036,6 +1038,13 @@ enum AuditAction {
   GROUP_MEMBER_ADDED
   GROUP_MEMBER_REMOVED
 
+  // Webhooks & API Keys (Phase 19)
+  WEBHOOK_CREATED
+  WEBHOOK_UPDATED
+  WEBHOOK_DELETED
+  API_KEY_CREATED
+  API_KEY_REVOKED
+
   // Admin Actions
   SETTINGS_CHANGED
   DATA_EXPORTED
@@ -1577,4 +1586,89 @@ model GroupMember {
   @@index([groupId])
   @@index([userId])
   @@map("group_members")
+}
+
+// ==================== WEBHOOKS & API KEYS (Phase 19) ====================
+
+enum WebhookEvent {
+  ENROLLMENT_CREATED
+  ENROLLMENT_COMPLETED
+  ASSIGNMENT_SUBMITTED
+  GRADE_UPDATED
+  COURSE_PUBLISHED
+  ASSESSMENT_ATTEMPTED
+  USER_CREATED
+}
+
+model Webhook {
+  id          String         @id @default(cuid())
+  url         String
+  description String?
+  secret      String         // HMAC-SHA256 signing secret
+  events      WebhookEvent[]
+  isActive    Boolean        @default(true)
+  userId      String         // Owner who created the webhook
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id           String       @id @default(cuid())
+  webhookId    String
+  event        WebhookEvent
+  payload      Json
+  statusCode   Int?         // HTTP response status code (null if failed to connect)
+  responseBody String?      @db.Text
+  success      Boolean      @default(false)
+  attempts     Int          @default(1)
+  maxAttempts  Int          @default(5)
+  nextRetryAt  DateTime?    // When to retry (null if no more retries)
+  error        String?      @db.Text  // Error message if delivery failed
+  deliveredAt  DateTime     @default(now())
+  completedAt  DateTime?    // When the delivery was successfully completed or abandoned
+
+  // Relations
+  webhook      Webhook      @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([success, nextRetryAt]) // For retry cron query
+  @@index([deliveredAt])
+  @@map("webhook_deliveries")
+}
+
+enum APIKeyPermission {
+  COURSES
+  ENROLLMENTS
+  GRADES
+  USERS
+  ANALYTICS
+}
+
+model APIKey {
+  id          String             @id @default(cuid())
+  name        String
+  keyPrefix   String             // First 8 chars of key (for display: "ck_abc1...")
+  keyHash     String             @unique // SHA-256 hash of the full key
+  permissions APIKeyPermission[]
+  userId      String             // Owner
+  isActive    Boolean            @default(true)
+  expiresAt   DateTime?          // Optional expiry
+  lastUsedAt  DateTime?
+  createdAt   DateTime           @default(now())
+
+  // Relations
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([keyHash])
+  @@index([isActive])
+  @@map("api_keys")
 }

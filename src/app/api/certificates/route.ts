@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendCertificateEmail } from "@/lib/email";
+import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
 
 // GET /api/certificates - Get user's certificates
 export async function GET() {
@@ -199,6 +200,12 @@ export async function POST(request: Request) {
       data: {
         completedAt: new Date(),
       },
+    });
+
+    dispatchWebhookEvent("ENROLLMENT_COMPLETED", {
+      userId: session.user.id,
+      courseId,
+      courseTitle: certificate.course.title,
     });
 
     // Send certificate email (non-blocking)
