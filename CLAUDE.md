@@ -197,3 +197,13 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
   - Progress tracker row
   - Sprint section with feature table and key files
   - Update log entry
+
+### Scope & Decision Making
+- **Related improvements**: If I notice a related improvement or small bug during a feature, note it and ask if you want it included
+- **UI/UX decisions**: Match existing patterns but make reasonable improvements if I see better approaches
+- **Performance**: Include optimizations when clearly beneficial (caching, query optimization, lazy loading)
+- **Dependencies**: Add new npm packages if clearly needed for the feature
+
+### Session Routine
+- **Session start**: Automatically read CLAUDE.md + DEVELOPMENT_PLAN.md when starting a new chat
+- **Progress updates**: Give status update after each feature completes
