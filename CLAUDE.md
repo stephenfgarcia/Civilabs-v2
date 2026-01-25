@@ -166,3 +166,11 @@ void notifyAssignmentGraded(userId, title, courseId);
 
 ### Component Structure
 UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base components are in `src/components/ui/`, feature components in domain folders (editor/, learn/, grading/, etc.).
+
+## Workflow Preferences
+
+- **Ask questions first**: Before starting a sprint or major feature, ask clarifying questions to improve work output
+- **Commit after every feature**: Don't batch commits - commit immediately after each feature is complete
+- **Run tests after every feature**: Execute `npm run test` and `npm run build` after each feature implementation
+- **Update DEVELOPMENT_PLAN.md**: Always update the development plan after completing each sprint with progress, key files, and update log entry
+- **Push after commits**: Push to remote after committing
