@@ -1,7 +1,7 @@
 # CiviLabs LMS - Development Plan & Progress Tracker
 
 > **Last Updated:** January 2026
-> **Overall Progress:** Phase 1-9, 11-19 + Sprint A Complete | Production Ready & Deployed
+> **Overall Progress:** Phase 1-9, 11-19 + Sprint A + Sprint B Complete | Production Ready & Deployed
 
 ---
 
@@ -496,6 +496,7 @@ Root Config Files:
 | Phase 18           | Cross-Role: Advanced Analytics & Charts   | COMPLETED   | 100%  |
 | Phase 19           | Integrations: Webhooks & API Keys         | COMPLETED   | 100%  |
 | Sprint A           | UI Completion (6 deferred UI items)       | COMPLETED   | 100%  |
+| Sprint B           | Instructor Polish (4 items)               | COMPLETED   | 100%  |
 | User Settings      | Profile, Password, Notifications, Privacy, Platform | COMPLETED | 100% |
 | Production Ready   | Error Tracking, Rate Limit         | COMPLETED   | 100%       |
 | Deployment         | Vercel, Domain, OAuth              | COMPLETED   | 100%       |
@@ -503,9 +504,10 @@ Root Config Files:
 **Core Features (Phase 1-13): 100% Complete**
 **Competitive Parity Features (Phase 14-19): 100% Complete**
 **Sprint A (UI Completion): 100% Complete**
+**Sprint B (Instructor Polish): 100% Complete**
 **Production Readiness: 100%**
 **Deployment: 100% (Live at civilabsreview.com)**
-**Overall Project Completion: 92% (All phases + Sprint A complete)**
+**Overall Project Completion: 94% (All phases + Sprint A + Sprint B complete)**
 
 ---
 
@@ -1411,6 +1413,37 @@ Addresses 6 high-priority deferred UI items that had backend APIs ready but no f
 
 ---
 
+## Sprint B: Instructor Polish
+
+**Status: COMPLETED**
+
+Addresses 4 instructor workflow improvements for grading and grade management.
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Auto-Grade Sync | [x] | Configurable per course toggle — quiz/assignment scores auto-sync to gradebook StudentGrade records |
+| Inline Feedback | [x] | Comment thread + text annotations on submissions with character-offset highlighting |
+| File Preview | [x] | PDF iframe, images, Office docs via Google Docs Viewer in grading interface |
+| Notification Improvements | [x] | Helpers for graded assignments, submission feedback, manual grade needed alerts |
+
+### Key Files (Sprint B)
+- `src/lib/grade-sync.ts` — Auto-grade sync utility with upsert to StudentGrade
+- `src/components/editor/auto-grade-toggle.tsx` — Instructor toggle for autoGradeSync setting
+- `src/app/api/courses/[courseId]/assignments/[assignmentId]/submissions/[submissionId]/comments/route.ts` — Comment thread API
+- `src/app/api/courses/[courseId]/assignments/[assignmentId]/submissions/[submissionId]/annotations/route.ts` — Text annotation API
+- `src/components/grading/feedback-panel.tsx` — Inline feedback UI with comment thread + annotation highlighting
+- `src/components/grading/file-preview.tsx` — PDF/Image/Office doc preview component
+- `src/lib/notifications.ts` — Extended with notifyAssignmentGraded, notifySubmissionFeedback, notifyManualGradeNeeded
+
+### Database Changes (Sprint B)
+- `Course.autoGradeSync` — Boolean field to enable/disable auto-sync per course
+- `SubmissionComment` — Model for comment thread on submissions
+- `SubmissionAnnotation` — Model for inline text annotations with character offsets
+
+**Completion Date:** January 2026
+
+---
+
 ## Implementation Roadmap
 
 ```
@@ -1525,6 +1558,7 @@ Addresses 6 high-priority deferred UI items that had backend APIs ready but no f
 | Jan 2026      | **Phase 17 COMPLETED** - Calendar, Groups & Collaboration: FullCalendar integration (month/week/agenda views), calendar API with CRUD and date range filtering, auto-event sync from assignments/assessments/attendance/chapters, iCal subscription URL (unique per-user token, dynamic sync with Google Calendar/Outlook), upcoming deadlines widget, course groups system (CRUD + member management), auto-assign groups (random or balanced by progress with snake-draft), group assignment support (one submission per group, shared grade), instructor group management UI, student group view, peer review deferred to future phase, 97 tests passing, clean build |
 | Jan 2026      | **Phase 18 COMPLETED** - Advanced Analytics & Visualizations: Recharts integration, course-level analytics API (enrollment trends, grade distribution, item analysis, time-on-task, completion rates), platform-wide analytics API (user growth, course stats, enrollment trends, activity summary), at-risk student detection API (multi-factor: inactive 7+ days, progress <30% after 14 days, missed assignments), student progress timeline API (unified chronological feed), reusable chart components (LineChart, BarChart, PieChart, ActivityHeatmap, ProgressTimeline), instructor course analytics dashboard with tabbed views, at-risk students standalone page with filters and sortable table, admin platform charts dashboard (user growth, role distribution pie, enrollment trends, activity heatmap, course comparison), cohort analysis and PDF export deferred, 97 tests passing, clean build |
 | Jan 2026      | **Phase 19 COMPLETED** - Webhooks & Developer API: Webhook system with HMAC-SHA256 signed payloads (7 event types: enrollment created/completed, assignment submitted, grade updated, course published, assessment attempted, user created), webhook delivery engine with 10s timeout and fire-and-forget pattern, Vercel Cron retry with exponential backoff (1m/5m/30m/2h/12h), webhook CRUD API with test endpoint, API key system with SHA-256 hashed storage and show-once generation, resource-level permissions (courses/enrollments/grades/users/analytics), Bearer token auth middleware with rate limiting (60 req/min), admin developer settings page with webhook management (delivery logs, toggle, test) and API key management (generate/revoke), SAML/SCORM/Competency deferred, 97 tests passing, clean build |
+| Jan 2026      | **Sprint B COMPLETED** - Instructor Polish: Auto-grade sync (configurable per course, quiz/assignment scores fire-and-forget to StudentGrade with instructor override protection), inline feedback (SubmissionComment + SubmissionAnnotation models, comment thread API, text annotation API with character offsets, FeedbackPanel component with yellow highlighting), file preview (PDF iframe, images direct, Office docs via Google Docs Viewer), notification improvements (notifyAssignmentGraded, notifySubmissionFeedback, notifyManualGradeNeeded helpers integrated into grading routes), 97 tests passing, clean build |
 
 ---
 
