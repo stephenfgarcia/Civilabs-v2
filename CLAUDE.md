@@ -169,8 +169,31 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 
 ## Workflow Preferences
 
-- **Ask questions first**: Before starting a sprint or major feature, ask clarifying questions to improve work output
+### Sprint Planning
+- **Ask questions first**: Before starting a sprint or major feature, ask clarifying questions (mix of multiple choice and open-ended)
+- **Explain features**: After completing each feature, explain what was built and document in DEVELOPMENT_PLAN.md
+- **Deferred items**: Occasionally remind about deferred items (SAML, SCORM, Peer Review, etc.) when relevant
+
+### Development Cycle
 - **Commit after every feature**: Don't batch commits - commit immediately after each feature is complete
-- **Run tests after every feature**: Execute `npm run test` and `npm run build` after each feature implementation
-- **Update DEVELOPMENT_PLAN.md**: Always update the development plan after completing each sprint with progress, key files, and update log entry
 - **Push after commits**: Push to remote after committing
+- **Run tests after every feature**: Execute `npm run test` and `npm run build` after each feature
+- **Write new tests**: Write tests for new features, not just run existing tests
+- **Build failures**: If build fails, note it and ask before fixing (don't auto-fix)
+- **Schema changes**: Always run `npx prisma db push` and `npx prisma generate` after schema changes
+
+### Code Style
+- **Comments**: Keep minimal like existing codebase (no excessive JSDoc)
+- **Error messages**: Use both user-friendly message + technical details:
+  ```typescript
+  return NextResponse.json({
+    message: "Failed to fetch course",  // user-friendly
+    error: "Connection timeout on course.findUnique"  // technical (in dev/logged)
+  }, { status: 500 });
+  ```
+
+### Documentation
+- **Update DEVELOPMENT_PLAN.md**: Always update after completing each sprint with:
+  - Progress tracker row
+  - Sprint section with feature table and key files
+  - Update log entry
