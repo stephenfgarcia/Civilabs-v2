@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { gradeSubmissionSchema } from "@/lib/validations";
+import { syncGradeToGradebook } from "@/lib/grade-sync";
+import { notifyAssignmentGraded } from "@/lib/notifications";
 
 interface RouteParams {
   params: Promise<{ courseId: string; assignmentId: string; submissionId: string }>;
@@ -72,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { courseId, submissionId } = await params;
+    const { courseId, assignmentId, submissionId } = await params;
 
     // Verify instructor/admin access
     const course = await db.course.findUnique({
@@ -134,6 +136,25 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         status: "GRADED",
       },
     });
+
+    // Auto-sync grade to gradebook (fire-and-forget)
+    void syncGradeToGradebook({
+      courseId,
+      userId: updated.userId,
+      referenceId: assignmentId,
+      score: finalGrade,
+      type: "ASSIGNMENT",
+    });
+
+    // Notify student that their assignment was graded (fire-and-forget)
+    void notifyAssignmentGraded(
+      updated.userId,
+      submission.assignment.title,
+      courseId,
+      assignmentId,
+      finalGrade,
+      submission.assignment.points
+    );
 
     return NextResponse.json(updated);
   } catch (error) {

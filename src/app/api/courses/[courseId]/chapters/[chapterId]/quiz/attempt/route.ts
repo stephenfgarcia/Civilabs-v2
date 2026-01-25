@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendQuizResultEmail } from "@/lib/email";
 import { dispatchWebhookEvent } from "@/lib/webhook-dispatcher";
+import { syncGradeToGradebook } from "@/lib/grade-sync";
 
 interface RouteParams {
   params: Promise<{ courseId: string; chapterId: string }>;
@@ -335,6 +336,17 @@ export async function POST(request: Request, { params }: RouteParams) {
       score,
       passed,
     });
+
+    // Auto-sync grade to gradebook (fire-and-forget, only if no manual grading needed)
+    if (!needsManualGrading) {
+      void syncGradeToGradebook({
+        courseId,
+        userId: session.user.id,
+        referenceId: quiz.id,
+        score: earnedPoints,
+        type: "ASSESSMENT",
+      });
+    }
 
     // Send quiz result email (non-blocking, only if auto-gradeable)
     if (session.user.email && !needsManualGrading) {

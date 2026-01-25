@@ -79,6 +79,16 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     const body = await request.json();
+
+    // Handle settings update (autoGradeSync toggle)
+    if (body.autoGradeSync !== undefined) {
+      const updatedCourse = await db.course.update({
+        where: { id: courseId },
+        data: { autoGradeSync: !!body.autoGradeSync },
+      });
+      return NextResponse.json(updatedCourse);
+    }
+
     const validatedData = courseSchema.safeParse(body);
 
     if (!validatedData.success) {

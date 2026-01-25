@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,8 @@ import { toast } from "sonner";
 import {
   FileText, MessageSquare, CheckCircle, Clock, User, Grid3X3,
 } from "lucide-react";
+import { FeedbackPanel } from "@/components/grading/feedback-panel";
+import { FilePreview } from "@/components/grading/file-preview";
 
 interface AssessmentAttempt {
   id: string;
@@ -66,6 +69,7 @@ interface AssignmentSubmission {
 
 export default function GradingQueuePage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = use(params);
+  const { data: session } = useSession();
   const [attempts, setAttempts] = useState<AssessmentAttempt[]>([]);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -282,9 +286,7 @@ export default function GradingQueuePage({ params }: { params: Promise<{ courseI
                   </div>
                 )}
                 {sub.fileUrl && (
-                  <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                    {sub.fileName || "View attached file"}
-                  </a>
+                  <FilePreview fileUrl={sub.fileUrl} fileName={sub.fileName} />
                 )}
                 {sub.urlLink && (
                   <a href={sub.urlLink} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
@@ -387,6 +389,17 @@ export default function GradingQueuePage({ params }: { params: Promise<{ courseI
                         Cancel
                       </Button>
                     </div>
+
+                    {/* Inline Feedback Panel */}
+                    {session?.user?.id && (
+                      <FeedbackPanel
+                        courseId={courseId}
+                        assignmentId={sub.assignment.id}
+                        submissionId={sub.id}
+                        textContent={sub.textContent}
+                        currentUserId={session.user.id}
+                      />
+                    )}
                   </div>
                 ) : (
                   <Button size="sm" variant="outline" onClick={() => startGrading(sub)}>

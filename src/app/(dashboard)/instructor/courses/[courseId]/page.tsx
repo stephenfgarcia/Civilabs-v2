@@ -25,6 +25,7 @@ import {
 import { CourseEditForm } from "@/components/editor/course-edit-form";
 import { ChaptersList } from "@/components/editor/chapters-list";
 import { CourseActions } from "@/components/editor/course-actions";
+import { AutoGradeToggle } from "@/components/editor/auto-grade-toggle";
 
 interface CourseEditorPageProps {
   params: Promise<{ courseId: string }>;
@@ -234,8 +235,11 @@ export default async function CourseEditorPage({ params }: CourseEditorPageProps
           </Card>
         </div>
 
-        {/* Right Column - Chapters */}
+        {/* Right Column - Chapters & Settings */}
         <div className="space-y-6">
+          {/* Grading Settings */}
+          <AutoGradeToggle courseId={course.id} initialValue={course.autoGradeSync} />
+
           <Card className="animate-fade-in-up" style={{ animationDelay: "150ms" }}>
             <CardHeader>
               <div className="flex items-center gap-2">

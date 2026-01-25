@@ -170,6 +170,63 @@ export async function notifyAnnouncement(
   }
 }
 
+// Notify student that their assignment has been graded
+export async function notifyAssignmentGraded(
+  userId: string,
+  assignmentTitle: string,
+  courseId: string,
+  assignmentId: string,
+  grade?: number,
+  maxPoints?: number
+) {
+  const scoreText = grade !== undefined && maxPoints !== undefined
+    ? ` You received ${grade}/${maxPoints} points.`
+    : "";
+  return createNotification({
+    userId,
+    type: "ASSIGNMENT_GRADED",
+    title: "Assignment Graded",
+    message: `Your submission for "${assignmentTitle}" has been graded.${scoreText}`,
+    link: `/courses/${courseId}/assignments/${assignmentId}`,
+    metadata: { courseId, assignmentId, grade, maxPoints },
+  });
+}
+
+// Notify student that new feedback/comment was added to their submission
+export async function notifySubmissionFeedback(
+  userId: string,
+  assignmentTitle: string,
+  courseId: string,
+  assignmentId: string,
+  instructorName?: string
+) {
+  return createNotification({
+    userId,
+    type: "COURSE_UPDATE",
+    title: "New Feedback on Your Submission",
+    message: `${instructorName || "Your instructor"} left feedback on your submission for "${assignmentTitle}"`,
+    link: `/courses/${courseId}/assignments/${assignmentId}`,
+    metadata: { courseId, assignmentId, type: "feedback" },
+  });
+}
+
+// Notify instructor that a submission needs manual grading (essay questions)
+export async function notifyManualGradeNeeded(
+  instructorId: string,
+  studentName: string,
+  quizTitle: string,
+  courseId: string
+) {
+  return createNotification({
+    userId: instructorId,
+    type: "MANUAL_GRADE_NEEDED",
+    title: "Manual Grading Required",
+    message: `${studentName}'s submission for "${quizTitle}" contains essay questions that need manual grading.`,
+    link: `/instructor/courses/${courseId}/grading`,
+    metadata: { courseId, quizTitle, studentName },
+  });
+}
+
 // Get unread notification count for a user
 export async function getUnreadCount(userId: string) {
   try {
