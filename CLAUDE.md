@@ -237,3 +237,12 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 - **Self-review**: Ask user to review critical sections before committing
 - **Technical debt**: Fix if small, note in DEVELOPMENT_PLAN.md as deferred item if large
 - **Breaking changes**: Always ask before making breaking API changes
+- **Dependency updates**: Flag outdated/vulnerable dependencies and ask before updating
+
+### Testing Strategy
+- **Test coverage**: Write Unit + Integration + E2E tests (if applicable) for new features
+- **Error recovery**: Implement transaction rollback where possible for operations that can fail mid-way
+
+### Database Best Practices
+- **Query optimization**: Always use `select` to limit fields returned AND include indexes in schema for new queries
+- **Feature flags**: Ask if feature flags are needed for larger features that might need gradual rollout
