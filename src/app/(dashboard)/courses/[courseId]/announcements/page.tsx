@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Megaphone, Pin } from "lucide-react";
+import { Megaphone, Pin, ArrowLeft } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 
 interface Announcement {
   id: string;
@@ -17,13 +20,21 @@ interface Announcement {
 export default function CourseAnnouncementsPage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = use(params);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [courseTitle, setCourseTitle] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetch_data() {
       try {
-        const res = await fetch(`/api/courses/${courseId}/announcements`);
-        if (res.ok) { setAnnouncements(await res.json()); }
+        const [annRes, courseRes] = await Promise.all([
+          fetch(`/api/courses/${courseId}/announcements`),
+          fetch(`/api/courses/${courseId}`),
+        ]);
+        if (annRes.ok) { setAnnouncements(await annRes.json()); }
+        if (courseRes.ok) {
+          const courseData = await courseRes.json();
+          setCourseTitle(courseData.title);
+        }
       } catch { toast.error("Failed to load announcements"); }
       finally { setLoading(false); }
     }
@@ -34,6 +45,22 @@ export default function CourseAnnouncementsPage({ params }: { params: Promise<{ 
 
   return (
     <div className="p-6 space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: courseTitle || "Course", href: `/courses/${courseId}` },
+          { label: "Announcements" },
+        ]}
+      />
+
+      {/* Back link */}
+      <Button variant="ghost" size="sm" asChild>
+        <Link href={`/courses/${courseId}`}>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back to Course
+        </Link>
+      </Button>
+
       <h1 className="text-2xl font-bold">Announcements</h1>
 
       {announcements.length === 0 ? (

@@ -20,6 +20,7 @@ import {
   Bookmark,
   StickyNote,
   Route,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@prisma/client";
@@ -28,187 +29,64 @@ interface SidebarProps {
   userRole: UserRole;
 }
 
-// Common routes available to all authenticated users
-const commonRoutes = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-  },
-  {
-    label: "Browse Courses",
-    icon: BookOpen,
-    href: "/courses",
-  },
-  {
-    label: "Forums",
-    icon: MessagesSquare,
-    href: "/forums",
-  },
-  {
-    label: "Certificates",
-    icon: Award,
-    href: "/certificates",
-  },
+interface RouteItem {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  group: string;
+}
+
+const studentRoutes: RouteItem[] = [
+  // Learning
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", group: "Learning" },
+  { label: "Browse Courses", icon: BookOpen, href: "/courses", group: "Learning" },
+  { label: "My Progress", icon: BarChart3, href: "/progress", group: "Learning" },
+  { label: "Calendar", icon: Calendar, href: "/calendar", group: "Learning" },
+  // Resources
+  { label: "Bookmarks", icon: Bookmark, href: "/bookmarks", group: "Resources" },
+  { label: "My Notes", icon: StickyNote, href: "/notes", group: "Resources" },
+  { label: "Certificates", icon: Award, href: "/certificates", group: "Resources" },
+  { label: "Learning Paths", icon: Route, href: "/learning-paths", group: "Resources" },
+  // Community
+  { label: "Forums", icon: MessagesSquare, href: "/forums", group: "Community" },
+  { label: "Chat", icon: MessageSquare, href: "/chat", group: "Community" },
+  // Account
+  { label: "Settings", icon: Settings, href: "/student/settings", group: "Account" },
 ];
 
-const studentRoutes = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-  },
-  {
-    label: "Browse Courses",
-    icon: BookOpen,
-    href: "/courses",
-  },
-  {
-    label: "My Progress",
-    icon: BarChart3,
-    href: "/progress",
-  },
-  {
-    label: "Bookmarks",
-    icon: Bookmark,
-    href: "/bookmarks",
-  },
-  {
-    label: "My Notes",
-    icon: StickyNote,
-    href: "/notes",
-  },
-  {
-    label: "Learning Paths",
-    icon: Route,
-    href: "/learning-paths",
-  },
-  {
-    label: "Forums",
-    icon: MessagesSquare,
-    href: "/forums",
-  },
-  {
-    label: "Chat",
-    icon: MessageSquare,
-    href: "/chat",
-  },
-  {
-    label: "Certificates",
-    icon: Award,
-    href: "/certificates",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    href: "/student/settings",
-  },
+const instructorRoutes: RouteItem[] = [
+  // Teaching
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", group: "Teaching" },
+  { label: "My Courses", icon: BookOpen, href: "/instructor/courses", group: "Teaching" },
+  { label: "Create Course", icon: PlusCircle, href: "/instructor/courses/create", group: "Teaching" },
+  { label: "Media Library", icon: ImageIcon, href: "/instructor/media", group: "Teaching" },
+  { label: "Analytics", icon: BarChart3, href: "/instructor/analytics", group: "Teaching" },
+  // Browse
+  { label: "Browse Courses", icon: GraduationCap, href: "/courses", group: "Browse" },
+  // Community
+  { label: "Forums", icon: MessagesSquare, href: "/forums", group: "Community" },
+  { label: "Chat", icon: MessageSquare, href: "/chat", group: "Community" },
+  // Account
+  { label: "Certificates", icon: Award, href: "/certificates", group: "Account" },
+  { label: "Settings", icon: Settings, href: "/instructor/settings", group: "Account" },
 ];
 
-const instructorRoutes = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-  },
-  {
-    label: "My Courses",
-    icon: BookOpen,
-    href: "/instructor/courses",
-  },
-  {
-    label: "Create Course",
-    icon: PlusCircle,
-    href: "/instructor/courses/create",
-  },
-  {
-    label: "Media Library",
-    icon: ImageIcon,
-    href: "/instructor/media",
-  },
-  {
-    label: "Analytics",
-    icon: BarChart3,
-    href: "/instructor/analytics",
-  },
-  {
-    label: "Browse Courses",
-    icon: GraduationCap,
-    href: "/courses",
-  },
-  {
-    label: "Forums",
-    icon: MessagesSquare,
-    href: "/forums",
-  },
-  {
-    label: "Chat",
-    icon: MessageSquare,
-    href: "/chat",
-  },
-  {
-    label: "Certificates",
-    icon: Award,
-    href: "/certificates",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    href: "/instructor/settings",
-  },
-];
-
-const adminRoutes = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-  },
-  {
-    label: "Browse Courses",
-    icon: BookOpen,
-    href: "/courses",
-  },
-  {
-    label: "Media Library",
-    icon: ImageIcon,
-    href: "/instructor/media",
-  },
-  {
-    label: "Forums",
-    icon: MessagesSquare,
-    href: "/forums",
-  },
-  {
-    label: "Chat",
-    icon: MessageSquare,
-    href: "/chat",
-  },
-  {
-    label: "Certificates",
-    icon: Award,
-    href: "/certificates",
-  },
-  {
-    label: "Reports",
-    icon: FileSpreadsheet,
-    href: "/admin/reports",
-  },
-  {
-    label: "Audit Logs",
-    icon: ScrollText,
-    href: "/admin/audit-logs",
-  },
-  {
-    label: "Admin Panel",
-    icon: Settings,
-    href: "/admin",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    href: "/admin/settings",
-  },
+const adminRoutes: RouteItem[] = [
+  // Overview
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", group: "Overview" },
+  { label: "Browse Courses", icon: BookOpen, href: "/courses", group: "Overview" },
+  // Management
+  { label: "Admin Panel", icon: Settings, href: "/admin", group: "Management" },
+  { label: "Reports", icon: FileSpreadsheet, href: "/admin/reports", group: "Management" },
+  { label: "Audit Logs", icon: ScrollText, href: "/admin/audit-logs", group: "Management" },
+  // Tools
+  { label: "Media Library", icon: ImageIcon, href: "/instructor/media", group: "Tools" },
+  // Community
+  { label: "Forums", icon: MessagesSquare, href: "/forums", group: "Community" },
+  { label: "Chat", icon: MessageSquare, href: "/chat", group: "Community" },
+  // Account
+  { label: "Certificates", icon: Award, href: "/certificates", group: "Account" },
+  { label: "Settings", icon: Settings, href: "/admin/settings", group: "Account" },
 ];
 
 export function Sidebar({ userRole }: SidebarProps) {
@@ -221,6 +99,17 @@ export function Sidebar({ userRole }: SidebarProps) {
         ? instructorRoutes
         : studentRoutes;
 
+  // Group routes by their group property
+  const groupedRoutes = routes.reduce<Record<string, RouteItem[]>>((acc, route) => {
+    if (!acc[route.group]) {
+      acc[route.group] = [];
+    }
+    acc[route.group].push(route);
+    return acc;
+  }, {});
+
+  const groupOrder = Object.keys(groupedRoutes);
+
   return (
     <div className="h-full border-r flex flex-col overflow-y-auto bg-card shadow-sm">
       <div className="p-6">
@@ -231,27 +120,34 @@ export function Sidebar({ userRole }: SidebarProps) {
           <span className="font-bold text-xl">CiviLabs</span>
         </Link>
       </div>
-      <div className="flex flex-col w-full">
-        {routes.map((route) => (
-          <Link
-            key={route.href}
-            href={route.href}
-            className={cn(
-              "flex items-center gap-x-2 text-muted-foreground text-sm font-medium pl-6 transition-all hover:text-foreground hover:bg-muted/50",
-              pathname === route.href &&
-                "text-primary bg-primary/10 hover:bg-primary/10 hover:text-primary border-r-2 border-primary"
-            )}
-          >
-            <div className="flex items-center gap-x-2 py-4">
-              <route.icon
-                className={cn(
-                  "h-5 w-5",
-                  pathname === route.href && "text-primary"
-                )}
-              />
-              {route.label}
+      <div className="flex flex-col w-full px-3 pb-4">
+        {groupOrder.map((group, groupIndex) => (
+          <div key={group} className={cn(groupIndex > 0 && "mt-4")}>
+            <div className="px-3 mb-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {group}
+              </span>
             </div>
-          </Link>
+            {groupedRoutes[group].map((route) => (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={cn(
+                  "flex items-center gap-x-2 text-muted-foreground text-sm font-medium px-3 py-2.5 rounded-md transition-all hover:text-foreground hover:bg-muted/50",
+                  pathname === route.href &&
+                    "text-primary bg-primary/10 hover:bg-primary/10 hover:text-primary"
+                )}
+              >
+                <route.icon
+                  className={cn(
+                    "h-4 w-4",
+                    pathname === route.href && "text-primary"
+                  )}
+                />
+                {route.label}
+              </Link>
+            ))}
+          </div>
         ))}
       </div>
     </div>

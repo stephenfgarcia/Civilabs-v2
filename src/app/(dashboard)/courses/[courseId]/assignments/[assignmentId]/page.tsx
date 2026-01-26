@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,8 +10,9 @@ import { UploadButton } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
 import {
   FileText, Upload, Link2, Clock, CheckCircle,
-  AlertTriangle, Send,
+  AlertTriangle, Send, ArrowLeft,
 } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 interface Assignment {
   id: string;
@@ -39,6 +41,7 @@ interface Assignment {
 export default function StudentAssignmentPage({ params }: { params: Promise<{ courseId: string; assignmentId: string }> }) {
   const { courseId, assignmentId } = use(params);
   const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [courseTitle, setCourseTitle] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,6 +54,7 @@ export default function StudentAssignmentPage({ params }: { params: Promise<{ co
 
   useEffect(() => {
     fetchAssignment();
+    fetchCourse();
   }, []);
 
   async function fetchAssignment() {
@@ -65,6 +69,18 @@ export default function StudentAssignmentPage({ params }: { params: Promise<{ co
       toast.error("Failed to load assignment");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchCourse() {
+    try {
+      const res = await fetch(`/api/courses/${courseId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCourseTitle(data.title);
+      }
+    } catch {
+      // Silently fail
     }
   }
 
@@ -121,6 +137,23 @@ export default function StudentAssignmentPage({ params }: { params: Promise<{ co
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: courseTitle || "Course", href: `/courses/${courseId}` },
+          { label: "Assignments", href: `/courses/${courseId}/assignments` },
+          { label: assignment.title },
+        ]}
+      />
+
+      {/* Back link */}
+      <Button variant="ghost" size="sm" asChild>
+        <Link href={`/courses/${courseId}/assignments`}>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          All Assignments
+        </Link>
+      </Button>
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">{assignment.title}</h1>

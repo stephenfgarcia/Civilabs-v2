@@ -16,6 +16,9 @@ import {
   Menu,
   X,
   Lock,
+  BarChart3,
+  ClipboardList,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -115,6 +118,34 @@ export function CourseSidebar({
             />
           </div>
         </div>
+      </div>
+
+      {/* Course Quick Links */}
+      <div className="px-4 py-3 border-b space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+          Course Links
+        </p>
+        <Link
+          href={`/courses/${course.id}/grades`}
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          <BarChart3 className="h-3.5 w-3.5" />
+          View Grades
+        </Link>
+        <Link
+          href={`/courses/${course.id}/assignments`}
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          <ClipboardList className="h-3.5 w-3.5" />
+          Assignments
+        </Link>
+        <Link
+          href={`/courses/${course.id}/announcements`}
+          className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          <Megaphone className="h-3.5 w-3.5" />
+          Announcements
+        </Link>
       </div>
 
       {/* Chapters */}

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { BookOpen, Trophy } from "lucide-react";
+import { BookOpen, Trophy, ArrowLeft, Play } from "lucide-react";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 
 interface GradeCategory {
   id: string;
@@ -24,9 +27,10 @@ interface GradeItem {
 export default function StudentGradesPage({ params }: { params: Promise<{ courseId: string }> }) {
   const { courseId } = use(params);
   const [categories, setCategories] = useState<GradeCategory[]>([]);
+  const [courseTitle, setCourseTitle] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchGrades(); }, []);
+  useEffect(() => { fetchGrades(); fetchCourse(); }, []);
 
   async function fetchGrades() {
     try {
@@ -37,6 +41,18 @@ export default function StudentGradesPage({ params }: { params: Promise<{ course
       }
     } catch { toast.error("Failed to load grades"); }
     finally { setLoading(false); }
+  }
+
+  async function fetchCourse() {
+    try {
+      const res = await fetch(`/api/courses/${courseId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCourseTitle(data.title);
+      }
+    } catch {
+      // Silently fail
+    }
   }
 
   function getScore(item: GradeItem): number | null {
@@ -100,6 +116,30 @@ export default function StudentGradesPage({ params }: { params: Promise<{ course
 
   return (
     <div className="p-6 space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb
+        items={[
+          { label: courseTitle || "Course", href: `/courses/${courseId}` },
+          { label: "Grades" },
+        ]}
+      />
+
+      {/* Back to course link */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/courses/${courseId}`}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Course
+          </Link>
+        </Button>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/courses/${courseId}/learn`}>
+            <Play className="h-4 w-4 mr-1" />
+            Continue Learning
+          </Link>
+        </Button>
+      </div>
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">My Grades</h1>
         {overall.percent !== null && (

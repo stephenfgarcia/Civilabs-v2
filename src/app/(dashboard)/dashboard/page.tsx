@@ -10,6 +10,8 @@ import {
   Play,
   ChevronRight,
   Target,
+  Calendar,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +21,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StudentTodo } from "@/components/dashboard/student-todo";
+import { UpcomingDeadlines } from "@/components/calendar/upcoming-deadlines";
 
 async function getDashboardData(userId: string) {
   // Get enrollments with course data
@@ -136,6 +140,13 @@ export default async function DashboardPage() {
           Track your progress and continue learning
         </p>
       </div>
+
+      {/* To-Do Section - Only for students */}
+      {session.user.role === "STUDENT" && (
+        <div className="animate-fade-in-up">
+          <StudentTodo />
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 dashboard-grid">
@@ -395,8 +406,15 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
+          {/* Upcoming Deadlines - Only for students */}
+          {session.user.role === "STUDENT" && (
+            <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+              <UpcomingDeadlines />
+            </div>
+          )}
+
           {/* Quick Actions */}
-          <Card className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+          <Card className="animate-fade-in-up" style={{ animationDelay: "250ms" }}>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
@@ -407,12 +425,22 @@ export default async function DashboardPage() {
                   Browse Courses
                 </Link>
               </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/certificates">
-                  <Award className="h-4 w-4 mr-2" />
-                  My Certificates
-                </Link>
-              </Button>
+              {session.user.role === "STUDENT" && (
+                <>
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/calendar">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      View Calendar
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href="/progress">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      My Progress
+                    </Link>
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
