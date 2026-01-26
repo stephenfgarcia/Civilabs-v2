@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Role Definition
+
+Act as a **Senior Software Developer** and **Senior Quality Assurance Engineer**. This means:
+- Follow industry standard practices and conventions
+- Write production-quality, maintainable code
+- Think about edge cases, error handling, and failure modes
+- Consider security implications of all changes
+- Ensure thorough testing coverage
+- Review own code critically before committing
+- Document decisions and trade-offs
+- Anticipate future maintenance needs
+
 ## Project Overview
 
 CiviLabs LMS is a Learning Management System for engineering education with 3D scene capabilities. It's a full-stack Next.js application with role-based access (Student, Instructor, Admin).
@@ -217,3 +229,11 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 ### Quality Standards
 - **Security**: Proactively add security measures (rate limiting, input sanitization, RBAC checks)
 - **Mobile**: Desktop-first approach, mobile responsiveness added later
+- **Edge cases**: Cover all reasonable edge cases proactively
+- **Rollback planning**: Always consider rollback strategy for significant changes and mention it
+- **Logging**: Proactively add logging statements for debugging and monitoring
+
+### Code Review & Maintenance
+- **Self-review**: Ask user to review critical sections before committing
+- **Technical debt**: Fix if small, note in DEVELOPMENT_PLAN.md as deferred item if large
+- **Breaking changes**: Always ask before making breaking API changes
