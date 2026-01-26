@@ -246,3 +246,9 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 ### Database Best Practices
 - **Query optimization**: Always use `select` to limit fields returned AND include indexes in schema for new queries
 - **Feature flags**: Ask if feature flags are needed for larger features that might need gradual rollout
+- **Migrations**: Ask based on change complexity - use `prisma migrate` for production-critical changes, `db push` for dev
+
+### Environment & Versioning
+- **Environment-specific code**: Use both `process.env.NODE_ENV` checks and environment variables for feature toggles as appropriate
+- **API versioning**: Discuss approach when breaking changes are needed (prefix vs header-based)
+- **Notifications**: Ask if new feature should trigger notifications before adding
