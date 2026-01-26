@@ -207,3 +207,13 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 ### Session Routine
 - **Session start**: Automatically read CLAUDE.md + DEVELOPMENT_PLAN.md when starting a new chat
 - **Progress updates**: Give status update after each feature completes
+- **Context management**: Summarize completed work periodically to free up context in long sessions
+
+### Work Style
+- **Sequential work**: Work on features one at a time (safer, easier to track)
+- **Code reuse**: Search thoroughly before writing new code to avoid duplication
+- **API consistency**: Enforce strict response format consistency across all API routes (refactor existing if needed)
+
+### Quality Standards
+- **Security**: Proactively add security measures (rate limiting, input sanitization, RBAC checks)
+- **Mobile**: Desktop-first approach, mobile responsiveness added later
