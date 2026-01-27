@@ -1,6 +1,8 @@
 # CiviLabs LMS - Architecture Flow Diagrams
 
 > Comprehensive Mermaid flowcharts documenting all application flows, data paths, and system interactions.
+>
+> **See also:** [ARCHITECTURE_DEFINITIONS.md](./ARCHITECTURE_DEFINITIONS.md) for detailed descriptions of each section.
 
 ---
 
@@ -22,6 +24,14 @@
 14. [3D Scene Flows](#14-3d-scene-flows)
 15. [Notification System](#15-notification-system)
 16. [Media & Upload Flows](#16-media--upload-flows)
+17. [MFA & Security Flows](#17-mfa--security-flows)
+18. [Course Approval Workflow](#18-course-approval-workflow)
+19. [Email Campaign Flows](#19-email-campaign-flows)
+20. [Data Retention & GDPR Flows](#20-data-retention--gdpr-flows)
+21. [Calendar & Scheduling Flows](#21-calendar--scheduling-flows)
+22. [Groups & Collaboration Flows](#22-groups--collaboration-flows)
+23. [Advanced Analytics Flows](#23-advanced-analytics-flows)
+24. [Webhooks & API Key Flows](#24-webhooks--api-key-flows)
 
 ---
 
@@ -1627,6 +1637,1167 @@ flowchart TD
         T4[MODEL_3D: glb, gltf, obj, fbx]
         T5[OTHER: zip, etc.]
     end
+```
+
+---
+
+## 17. MFA & Security Flows
+
+### 17.1 Email OTP Verification Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Settings as MFA Settings Page
+    participant API as MFA API
+    participant DB as Database
+    participant Email as Resend Email
+    participant Redis as Rate Limiter
+
+    User->>Settings: Enable MFA
+    Settings->>API: POST /api/auth/mfa/setup
+    API->>DB: Create MFAConfig (method: EMAIL, verified: false)
+    API->>API: Generate 6-digit OTP
+    API->>DB: Store OTP hash + expiry (10 min)
+    API->>Email: Send OTP to user email
+    Email-->>User: Email with 6-digit code
+    API-->>Settings: {message: "OTP sent"}
+
+    User->>Settings: Enter OTP code
+    Settings->>API: POST /api/auth/mfa/verify {code}
+    API->>Redis: Check rate limit (5 attempts max)
+
+    alt Rate limit exceeded
+        Redis-->>API: {blocked: true}
+        API-->>Settings: 429 Too Many Requests
+    else Within limit
+        API->>DB: Fetch stored OTP hash
+        API->>API: Compare OTP hash
+
+        alt OTP valid
+            API->>DB: Set MFAConfig.verified = true
+            API->>DB: Generate 10 backup codes
+            API-->>Settings: {success: true, backupCodes: [...]}
+            Settings-->>User: Show backup codes (one-time display)
+        else OTP invalid or expired
+            API->>Redis: Increment failure count
+            API-->>Settings: {error: "Invalid or expired code"}
+        end
+    end
+```
+
+### 17.2 MFA Login Challenge Flow
+
+```mermaid
+flowchart TD
+    A[User: Enter credentials] --> B[POST /api/auth/callback/credentials]
+    B --> C{Credentials valid?}
+    C -->|No| D[Return auth error]
+    C -->|Yes| E{MFA enabled for user?}
+
+    E -->|No| F[Create session, redirect to dashboard]
+    E -->|Yes| G[Create pending session token]
+    G --> H[Redirect to /auth/mfa-challenge]
+
+    H --> I[Display MFA input form]
+    I --> J{Input type?}
+    J -->|OTP| K[User enters 6-digit code]
+    J -->|Backup Code| L[User enters backup code]
+
+    K --> M[POST /api/auth/mfa/challenge]
+    L --> N[POST /api/auth/mfa/backup]
+
+    M --> O{OTP valid?}
+    N --> P{Backup code valid?}
+
+    O -->|Yes| Q[Upgrade to full session]
+    O -->|No| R[Increment failure count]
+    P -->|Yes| S[Mark backup code as used]
+    P -->|No| R
+
+    S --> Q
+    Q --> F
+
+    R --> T{Failures >= 5?}
+    T -->|Yes| U[Lock account 15 min]
+    T -->|No| I
+
+    U --> V[Notify user via email]
+    V --> W[Show lockout message]
+```
+
+### 17.3 Backup Codes Management Flow
+
+```mermaid
+flowchart TD
+    A[MFA Setup Complete] --> B[Generate 10 backup codes]
+    B --> C[Hash each code with bcrypt]
+    C --> D[Store hashes in MFAConfig.backupCodes]
+    D --> E[Display plain codes to user ONCE]
+    E --> F[User saves codes securely]
+
+    subgraph "Backup Code Usage"
+        G[User locked out of email] --> H[Enter backup code]
+        H --> I[POST /api/auth/mfa/backup]
+        I --> J[Iterate through stored hashes]
+        J --> K{Any hash matches?}
+        K -->|Yes| L[Remove used code from array]
+        L --> M[Update MFAConfig]
+        M --> N[Grant access]
+        K -->|No| O[Return error]
+    end
+
+    subgraph "Regenerate Codes"
+        P[User: Regenerate codes] --> Q[Require current MFA verification]
+        Q --> R[Generate new 10 codes]
+        R --> S[Replace all existing codes]
+        S --> T[Display new codes ONCE]
+    end
+```
+
+### 17.4 Account Lockout State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Normal
+
+    Normal --> Attempt1 : Failed MFA attempt
+    Attempt1 --> Attempt2 : Failed MFA attempt
+    Attempt2 --> Attempt3 : Failed MFA attempt
+    Attempt3 --> Attempt4 : Failed MFA attempt
+    Attempt4 --> Attempt5 : Failed MFA attempt
+    Attempt5 --> Locked : 5th failure triggers lockout
+
+    Attempt1 --> Normal : Successful verification
+    Attempt2 --> Normal : Successful verification
+    Attempt3 --> Normal : Successful verification
+    Attempt4 --> Normal : Successful verification
+
+    Locked --> Cooldown : Lockout initiated
+
+    state Cooldown {
+        [*] --> Timer15Min
+        Timer15Min --> Unlocking : 15 minutes elapsed
+    }
+
+    Cooldown --> Normal : Timer complete
+    Locked --> Normal : Admin manual unlock
+
+    Note right of Locked : Email notification sent
+    Note right of Locked : Audit log created
+```
+
+---
+
+## 18. Course Approval Workflow
+
+### 18.1 Course Submission & Review Flow
+
+```mermaid
+flowchart TD
+    A[Instructor: Course ready] --> B{Approval required?}
+    B -->|No - Admin setting off| C[Direct publish]
+    B -->|Yes| D[Submit for approval]
+
+    D --> E[POST /api/courses/{id}/approval/submit]
+    E --> F[Create CourseApproval record]
+    F --> G[Set status = PENDING]
+    G --> H[Record submission timestamp]
+    H --> I[Notify all admins]
+
+    subgraph "Admin Review"
+        J[Admin: Open review queue] --> K[GET /api/admin/approvals?status=PENDING]
+        K --> L[Display pending courses]
+        L --> M[Select course to review]
+        M --> N[View course content]
+        N --> O{Decision?}
+
+        O -->|Approve| P[POST .../approval/approve]
+        O -->|Reject| Q[POST .../approval/reject {reason}]
+        O -->|Request Changes| R[POST .../approval/changes {feedback}]
+    end
+
+    P --> S[Set status = APPROVED]
+    S --> T[Auto-publish course]
+    T --> U[Notify instructor: Approved]
+
+    Q --> V[Set status = REJECTED]
+    V --> W[Store rejection reason]
+    W --> X[Notify instructor: Rejected]
+
+    R --> Y[Set status = CHANGES_REQUESTED]
+    Y --> Z[Store feedback in history]
+    Z --> AA[Notify instructor: Changes needed]
+    AA --> AB[Instructor makes changes]
+    AB --> D
+```
+
+### 18.2 Course Approval State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft : Course created
+
+    Draft --> Draft : Edit content
+    Draft --> PendingApproval : Submit for approval
+
+    PendingApproval --> Approved : Admin approves
+    PendingApproval --> Rejected : Admin rejects
+    PendingApproval --> ChangesRequested : Admin requests changes
+
+    ChangesRequested --> Draft : Instructor edits
+    Rejected --> Draft : Instructor revises
+
+    Approved --> Published : Auto-publish
+    Published --> Draft : Unpublish for edits
+
+    state PendingApproval {
+        [*] --> InQueue
+        InQueue --> UnderReview : Admin opens
+        UnderReview --> Decision : Review complete
+    }
+
+    state "Approval History" as History {
+        SubmittedAt : Timestamp
+        ReviewedBy : Admin ID
+        Decision : APPROVED/REJECTED/CHANGES
+        Comments : Feedback text
+    }
+```
+
+### 18.3 Approval History Tracking
+
+```mermaid
+sequenceDiagram
+    participant Instructor
+    participant API as Approval API
+    participant DB as Database
+    participant Admin
+    participant Notify as Notifications
+
+    Instructor->>API: Submit course for approval
+    API->>DB: Create CourseApproval
+    Note over DB: status: PENDING<br/>history: [{action: SUBMITTED, timestamp, userId}]
+    API->>Notify: notifyAdmins("New course pending")
+
+    Admin->>API: Request changes
+    API->>DB: Update CourseApproval
+    Note over DB: status: CHANGES_REQUESTED<br/>history: [..., {action: CHANGES_REQUESTED, feedback, timestamp, adminId}]
+    API->>Notify: notifyInstructor("Changes requested")
+
+    Instructor->>API: Resubmit course
+    API->>DB: Update CourseApproval
+    Note over DB: status: PENDING<br/>history: [..., {action: RESUBMITTED, timestamp, userId}]
+
+    Admin->>API: Approve course
+    API->>DB: Update CourseApproval
+    Note over DB: status: APPROVED<br/>history: [..., {action: APPROVED, timestamp, adminId}]
+    API->>DB: Set course.isPublished = true
+    API->>Notify: notifyInstructor("Course approved!")
+```
+
+---
+
+## 19. Email Campaign Flows
+
+### 19.1 Campaign Creation & Sending Flow
+
+```mermaid
+flowchart TD
+    A[Admin: Create Campaign] --> B[Fill campaign form]
+    B --> C[Set subject & body]
+    C --> D[Select recipient segment]
+
+    D --> E{Segment type?}
+    E -->|All Users| F[Query all active users]
+    E -->|By Role| G[Filter by STUDENT/INSTRUCTOR]
+    E -->|By Course| H[Filter by enrollment]
+    E -->|By Activity| I[Filter by lastActiveAt]
+    E -->|Custom| J[Upload email list]
+
+    F & G & H & I & J --> K[Preview recipient count]
+    K --> L{Schedule?}
+
+    L -->|Send now| M[POST /api/admin/campaigns]
+    L -->|Schedule| N[Set scheduledFor datetime]
+    N --> O[POST /api/admin/campaigns {scheduledFor}]
+
+    M --> P[Create EmailCampaign record]
+    P --> Q[Set status = SENDING]
+    Q --> R[Begin batch processing]
+
+    O --> S[Create EmailCampaign record]
+    S --> T[Set status = SCHEDULED]
+    T --> U[Vercel cron picks up at scheduledFor]
+    U --> R
+
+    subgraph "Batch Processing"
+        R --> V[Fetch 50 recipients]
+        V --> W[Send via Resend batch API]
+        W --> X[Record delivery status]
+        X --> Y{More recipients?}
+        Y -->|Yes| Z[Wait 1 second]
+        Z --> V
+        Y -->|No| AA[Set status = COMPLETED]
+    end
+```
+
+### 19.2 Campaign Execution Sequence
+
+```mermaid
+sequenceDiagram
+    participant Cron as Vercel Cron
+    participant API as Campaign API
+    participant DB as Database
+    participant Resend as Resend API
+    participant Users as Recipients
+
+    Cron->>API: GET /api/cron/campaigns (every 5 min)
+    API->>DB: Find SCHEDULED campaigns where scheduledFor <= now
+    DB-->>API: [campaign1, campaign2]
+
+    loop For each campaign
+        API->>DB: Set status = SENDING
+        API->>DB: Fetch recipient emails (paginated)
+
+        loop Batch of 50
+            API->>Resend: POST /emails/batch
+            Note over Resend: 50 personalized emails
+            Resend-->>API: {id, status} for each
+            API->>DB: Update sentCount, failedCount
+            API->>API: Sleep 1 second (rate limit)
+        end
+
+        API->>DB: Set status = COMPLETED
+        API->>DB: Record completedAt timestamp
+    end
+
+    Resend->>Users: Deliver emails
+```
+
+### 19.3 Campaign State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft : Create campaign
+
+    Draft --> Scheduled : Schedule for later
+    Draft --> Sending : Send immediately
+
+    Scheduled --> Sending : Cron triggers at scheduledFor
+    Scheduled --> Draft : Edit before send time
+    Scheduled --> Cancelled : Admin cancels
+
+    Sending --> Completed : All emails processed
+    Sending --> PartialFailure : Some emails failed
+
+    PartialFailure --> Completed : Retry exhausted
+
+    Completed --> [*]
+    Cancelled --> [*]
+
+    state Sending {
+        [*] --> Batching
+        Batching --> Waiting : Batch sent
+        Waiting --> Batching : Rate limit cooldown
+        Batching --> Done : No more recipients
+    }
+
+    state "Campaign Metrics" as Metrics {
+        TotalRecipients : Count
+        SentCount : Delivered
+        FailedCount : Bounced/Failed
+        OpenRate : Tracked opens
+    }
+```
+
+---
+
+## 20. Data Retention & GDPR Flows
+
+### 20.1 User Data Export Flow (GDPR Article 15)
+
+```mermaid
+flowchart TD
+    A[User: Request my data] --> B[Click "Export My Data"]
+    B --> C[POST /api/settings/privacy/export]
+
+    C --> D{Rate limit check}
+    D -->|Exceeded| E[Return 429: Try again later]
+    D -->|OK| F[Begin data collection]
+
+    F --> G[Fetch User record]
+    G --> H[Fetch Enrollments]
+    H --> I[Fetch Progress records]
+    I --> J[Fetch Quiz attempts]
+    J --> K[Fetch Certificates]
+    K --> L[Fetch Notes & Bookmarks]
+    L --> M[Fetch Forum posts]
+    M --> N[Fetch Chat messages]
+    N --> O[Fetch Notifications]
+
+    O --> P[Compile JSON package]
+    P --> Q[Add export metadata]
+    Q --> R[Create audit log entry]
+    R --> S[Return JSON download]
+    S --> T[User downloads file]
+
+    subgraph "Export Package Structure"
+        U[user_export.json]
+        U --> V[profile: {name, email, bio, createdAt}]
+        U --> W[enrollments: [{course, enrolledAt, progress}]]
+        U --> X[certificates: [{course, issuedAt, code}]]
+        U --> Y[learning: {notes: [], bookmarks: []}]
+        U --> Z[activity: {quizAttempts, forumPosts, messages}]
+    end
+```
+
+### 20.2 Account Deletion Flow (GDPR Article 17)
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Settings as Privacy Settings
+    participant API as Deletion API
+    participant DB as Database
+    participant Audit as Audit Log
+    participant Email as Resend
+
+    User->>Settings: Request account deletion
+    Settings->>API: POST /api/settings/privacy/delete
+    API->>API: Require password confirmation
+
+    alt Password incorrect
+        API-->>Settings: 401 Invalid password
+    else Password correct
+        API->>DB: Begin transaction
+
+        Note over DB: Anonymization (not hard delete)
+        API->>DB: User.name = "Deleted User"
+        API->>DB: User.email = "deleted_{uuid}@anon.local"
+        API->>DB: User.password = null
+        API->>DB: User.image = null
+        API->>DB: User.bio = null
+
+        API->>DB: Delete Account records (OAuth)
+        API->>DB: Delete NotificationPreference
+        API->>DB: Delete ConsentRecord
+
+        Note over DB: Preserve for integrity
+        API->>DB: Keep Enrollments (anonymized)
+        API->>DB: Keep Certificates (anonymized)
+        API->>DB: Keep QuizAttempts (for course stats)
+
+        API->>DB: Commit transaction
+        API->>Audit: Log ACCOUNT_DELETED event
+        API->>Email: Send confirmation email (to original)
+
+        API-->>Settings: {success: true}
+        Settings->>Settings: Clear session
+        Settings-->>User: Redirect to goodbye page
+    end
+```
+
+### 20.3 Automated Retention Policy Flow
+
+```mermaid
+flowchart TD
+    A[Vercel Cron: Weekly] --> B[GET /api/cron/retention]
+    B --> C[Fetch all RetentionPolicy records]
+
+    C --> D{For each policy}
+    D --> E{Data type?}
+
+    E -->|AUDIT_LOGS| F[Delete where createdAt < now - retentionDays]
+    E -->|USER_ACTIVITY| G[Delete where timestamp < now - retentionDays]
+    E -->|NOTIFICATIONS| H[Delete where createdAt < now - retentionDays AND isRead = true]
+    E -->|CHAT_MESSAGES| I[Delete where createdAt < now - retentionDays]
+    E -->|WEBHOOK_DELIVERIES| J[Delete where createdAt < now - retentionDays]
+
+    F & G & H & I & J --> K[Record deletion count]
+    K --> L{More policies?}
+    L -->|Yes| D
+    L -->|No| M[Create summary audit log]
+    M --> N[Return completion status]
+
+    subgraph "Default Retention Periods"
+        O[AUDIT_LOGS: 365 days]
+        P[USER_ACTIVITY: 90 days]
+        Q[NOTIFICATIONS: 30 days]
+        R[CHAT_MESSAGES: 180 days]
+        S[WEBHOOK_DELIVERIES: 30 days]
+    end
+```
+
+### 20.4 Consent Management Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoConsent : New user
+
+    NoConsent --> ConsentPrompt : First login
+
+    ConsentPrompt --> AllAccepted : Accept all
+    ConsentPrompt --> CustomSelection : Customize
+    ConsentPrompt --> AllRejected : Reject optional
+
+    CustomSelection --> PartialConsent : Save preferences
+    AllAccepted --> FullConsent : Save all granted
+    AllRejected --> MinimalConsent : Save required only
+
+    state "Consent Types" as Types {
+        Required : Terms of Service (mandatory)
+        Analytics : Usage analytics
+        Marketing : Marketing emails
+        ThirdParty : Third-party integrations
+    }
+
+    FullConsent --> UpdatePreferences : User changes mind
+    PartialConsent --> UpdatePreferences : User changes mind
+    MinimalConsent --> UpdatePreferences : User changes mind
+    UpdatePreferences --> PartialConsent : New selection saved
+
+    Note right of FullConsent : All ConsentRecord entries = true
+    Note right of MinimalConsent : Only TERMS_OF_SERVICE = true
+```
+
+---
+
+## 21. Calendar & Scheduling Flows
+
+### 21.1 Calendar Event Creation Flow
+
+```mermaid
+flowchart TD
+    A{Event source?}
+
+    A -->|Manual| B[User creates event]
+    A -->|Auto-sync| C[System generates from course data]
+
+    B --> D[POST /api/calendar]
+    D --> E{Event type?}
+    E -->|ASSIGNMENT_DUE| F[Link to Assignment]
+    E -->|QUIZ_DUE| G[Link to Quiz]
+    E -->|LECTURE| H[Set recurrence pattern]
+    E -->|OFFICE_HOURS| I[Set instructor availability]
+    E -->|PERSONAL| J[Private to user]
+    E -->|COURSE_EVENT| K[Visible to enrolled students]
+
+    F & G & H & I & J & K --> L[Validate date range]
+    L --> M[Create CalendarEvent record]
+    M --> N[Trigger notifications if enabled]
+
+    C --> O{Sync trigger?}
+    O -->|Assignment created| P[Create ASSIGNMENT_DUE event]
+    O -->|Quiz published| Q[Create QUIZ_DUE event]
+    O -->|Announcement scheduled| R[Create ANNOUNCEMENT event]
+
+    P & Q & R --> M
+```
+
+### 21.2 iCal Subscription Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Settings as Calendar Settings
+    participant API as Calendar API
+    participant DB as Database
+    participant External as Google Calendar/Outlook
+
+    User->>Settings: Click "Subscribe to Calendar"
+    Settings->>API: POST /api/calendar/subscribe
+    API->>DB: Check existing CalendarToken
+
+    alt Token exists
+        DB-->>API: Existing token
+    else No token
+        API->>API: Generate unique token (uuid)
+        API->>DB: Create CalendarToken {userId, token}
+        DB-->>API: New token
+    end
+
+    API-->>Settings: {icalUrl: "/api/calendar/ical/{token}"}
+    Settings-->>User: Display subscription URL
+
+    User->>External: Add calendar subscription
+    External->>API: GET /api/calendar/ical/{token}
+    API->>DB: Find user by token
+    API->>DB: Fetch user's calendar events
+    DB-->>API: Events list
+    API->>API: Generate iCal format (VCALENDAR)
+    API-->>External: iCal file (text/calendar)
+    External-->>User: Events appear in calendar app
+
+    Note over External,API: External calendars refresh periodically (15-60 min)
+```
+
+### 21.3 Calendar View Data Flow
+
+```mermaid
+flowchart TD
+    A[User opens Calendar page] --> B[GET /api/calendar?start=X&end=Y]
+
+    B --> C{User role?}
+    C -->|Student| D[Fetch personal events]
+    C -->|Instructor| E[Fetch personal + course events]
+    C -->|Admin| F[Fetch all visible events]
+
+    D --> G[Query CalendarEvent where userId = user OR enrolled courses]
+    E --> H[Query CalendarEvent where userId = user OR instructorId = user]
+    F --> I[Query all non-private events]
+
+    G & H & I --> J[Filter by date range]
+    J --> K[Group by event type]
+    K --> L[Apply color coding]
+
+    L --> M[Return to FullCalendar component]
+    M --> N{View mode?}
+    N -->|Month| O[Render month grid]
+    N -->|Week| P[Render week columns]
+    N -->|Day| Q[Render hourly slots]
+    N -->|Agenda| R[Render list view]
+
+    subgraph "Event Colors"
+        S[ASSIGNMENT_DUE: Red]
+        T[QUIZ_DUE: Orange]
+        U[LECTURE: Blue]
+        V[OFFICE_HOURS: Green]
+        W[PERSONAL: Purple]
+        X[COURSE_EVENT: Teal]
+    end
+```
+
+### 21.4 Upcoming Deadlines Widget Flow
+
+```mermaid
+flowchart TD
+    A[Dashboard loads] --> B[GET /api/calendar/upcoming?days=7]
+
+    B --> C[Calculate date range]
+    C --> D[Query events where:]
+    D --> E[startTime BETWEEN now AND now+7days]
+    E --> F[AND type IN (ASSIGNMENT_DUE, QUIZ_DUE)]
+    F --> G[AND user is enrolled in course]
+
+    G --> H[Order by startTime ASC]
+    H --> I[Limit to 10 items]
+    I --> J[Include course info]
+
+    J --> K[Return to widget]
+    K --> L{Any deadlines?}
+    L -->|Yes| M[Render deadline cards]
+    L -->|No| N[Show "No upcoming deadlines"]
+
+    M --> O[For each deadline]
+    O --> P[Show: Title, Course, Due date]
+    P --> Q[Calculate: "Due in X days/hours"]
+    Q --> R[Color code urgency]
+
+    subgraph "Urgency Colors"
+        S[> 3 days: Green]
+        T[1-3 days: Yellow]
+        U[< 24 hours: Red]
+        V[Overdue: Dark red]
+    end
+```
+
+---
+
+## 22. Groups & Collaboration Flows
+
+### 22.1 Group Creation & Management Flow
+
+```mermaid
+flowchart TD
+    A[Instructor: Manage Groups] --> B[GET /api/courses/{id}/groups]
+    B --> C[Display existing groups]
+
+    C --> D{Action?}
+    D -->|Create| E[Open create dialog]
+    D -->|Auto-assign| F[Open auto-assign dialog]
+    D -->|Edit| G[Edit group details]
+    D -->|Delete| H[Delete group]
+
+    E --> I[Set name, maxMembers]
+    I --> J[POST /api/courses/{id}/groups]
+    J --> K[Create CourseGroup record]
+    K --> C
+
+    F --> L{Assignment method?}
+    L -->|Random| M[Shuffle enrolled students]
+    L -->|Balanced| N[Distribute by performance]
+
+    M & N --> O[Calculate group sizes]
+    O --> P[POST .../groups/auto-assign]
+    P --> Q[Create groups + memberships]
+    Q --> R[Notify students of assignment]
+    R --> C
+
+    G --> S[PUT .../groups/{groupId}]
+    H --> T[DELETE .../groups/{groupId}]
+    S & T --> C
+```
+
+### 22.2 Group Membership Flow
+
+```mermaid
+sequenceDiagram
+    actor Instructor
+    actor Student
+    participant API as Groups API
+    participant DB as Database
+    participant Notify as Notifications
+
+    Instructor->>API: Add student to group
+    API->>DB: Check group capacity
+
+    alt Group full
+        DB-->>API: maxMembers reached
+        API-->>Instructor: 400 Group is full
+    else Has space
+        API->>DB: Create GroupMember {groupId, userId, role: MEMBER}
+        API->>Notify: Notify student of group assignment
+        API-->>Instructor: Member added
+    end
+
+    Instructor->>API: Set group leader
+    API->>DB: Update GroupMember.role = LEADER
+    API->>Notify: Notify student of leader role
+
+    Student->>API: View my groups
+    API->>DB: Find GroupMember where userId = student
+    DB-->>API: Groups with members list
+    API-->>Student: Display group info + teammates
+
+    Instructor->>API: Remove student from group
+    API->>DB: Delete GroupMember record
+    API->>Notify: Notify student of removal
+```
+
+### 22.3 Group Assignment Submission Flow
+
+```mermaid
+flowchart TD
+    A[Assignment: Group submission enabled] --> B[Student opens assignment]
+    B --> C{In a group?}
+    C -->|No| D[Show: "Join a group to submit"]
+    C -->|Yes| E[Show submission form]
+
+    E --> F[Student submits work]
+    F --> G[POST /api/.../submissions]
+    G --> H[Create AssignmentSubmission]
+    H --> I[Link to groupId]
+    I --> J[Set submittedBy = current user]
+
+    J --> K[For each group member]
+    K --> L[Create submission reference]
+    L --> M[All members see same submission]
+
+    M --> N[Instructor grades]
+    N --> O[Grade applies to all members]
+    O --> P[Update StudentGrade for each member]
+    P --> Q[Notify all group members]
+
+    subgraph "Group Submission Record"
+        R[AssignmentSubmission]
+        R --> S[groupId: linked group]
+        R --> T[submittedBy: who uploaded]
+        R --> U[content: shared work]
+        R --> V[grade: shared grade]
+    end
+```
+
+### 22.4 Group State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created : Instructor creates group
+
+    Created --> Filling : Add members
+    Filling --> Filling : Add more members
+    Filling --> Full : maxMembers reached
+    Full --> Filling : Member removed
+
+    state "Member Management" as Members {
+        [*] --> Invited
+        Invited --> Active : Accepted
+        Active --> Leader : Promoted
+        Leader --> Active : Demoted
+        Active --> Removed : Instructor removes
+    }
+
+    Created --> Active : Has members
+    Active --> Working : Assignment started
+    Working --> Submitted : Group submits
+    Submitted --> Graded : Instructor grades
+
+    state "Group Metrics" as Metrics {
+        MemberCount : Current members
+        MaxMembers : Capacity limit
+        SubmissionCount : Completed assignments
+        AverageGrade : Group performance
+    }
+```
+
+---
+
+## 23. Advanced Analytics Flows
+
+### 23.1 Data Aggregation Pipeline
+
+```mermaid
+flowchart TD
+    subgraph "Data Sources"
+        A1[UserActivity events]
+        A2[QuizAttempt records]
+        A3[UserProgress records]
+        A4[Enrollment records]
+        A5[AssignmentSubmission records]
+    end
+
+    subgraph "Aggregation Layer"
+        B1[Time-series grouping]
+        B2[User cohort grouping]
+        B3[Course grouping]
+        B4[Performance bucketing]
+    end
+
+    subgraph "Computed Metrics"
+        C1[Enrollment trends: daily/weekly/monthly]
+        C2[Completion rates: by course/chapter]
+        C3[Grade distributions: 10% buckets]
+        C4[Activity heatmaps: 7x24 grid]
+        C5[At-risk scores: multi-factor]
+    end
+
+    A1 --> B1
+    A2 --> B4
+    A3 --> B2
+    A4 --> B1
+    A5 --> B3
+
+    B1 --> C1
+    B2 --> C2
+    B3 --> C2
+    B4 --> C3
+    B1 --> C4
+    B2 & B4 --> C5
+
+    C1 & C2 & C3 & C4 & C5 --> D[Analytics API Response]
+    D --> E[Recharts Visualization]
+```
+
+### 23.2 Analytics API Request Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Page as Analytics Page
+    participant API as Analytics API
+    participant DB as Database
+    participant Cache as Query Cache
+
+    User->>Page: Open course analytics
+    Page->>API: GET /api/courses/{id}/analytics?type=overview
+
+    API->>Cache: Check cached result
+    alt Cache hit
+        Cache-->>API: Cached data (5 min TTL)
+        API-->>Page: Return cached
+    else Cache miss
+        API->>DB: Aggregate enrollments by date
+        API->>DB: Calculate completion percentages
+        API->>DB: Compute grade distribution
+        API->>DB: Query activity patterns
+
+        DB-->>API: Raw aggregated data
+        API->>API: Transform for charts
+        API->>Cache: Store result (5 min TTL)
+        API-->>Page: Return fresh data
+    end
+
+    Page->>Page: Render Recharts components
+    Page-->>User: Display interactive charts
+```
+
+### 23.3 Chart Rendering Flow
+
+```mermaid
+flowchart TD
+    A[Analytics data received] --> B{Chart type?}
+
+    B -->|Enrollment Trend| C[LineChart component]
+    B -->|Completion Rate| D[BarChart component]
+    B -->|Grade Distribution| E[Histogram component]
+    B -->|Activity Heatmap| F[HeatmapChart component]
+    B -->|Assessment Analysis| G[ComposedChart component]
+    B -->|Course Comparison| H[RadarChart component]
+
+    C --> I[Transform: {date, count}[]]
+    D --> J[Transform: {course, rate}[]]
+    E --> K[Transform: {bucket, count}[]]
+    F --> L[Transform: {day, hour, value}[][]]
+    G --> M[Transform: {question, correct%, avgTime}[]]
+    H --> N[Transform: {metric, courseA, courseB}[]]
+
+    I & J & K & L & M & N --> O[Recharts renders SVG]
+    O --> P[Apply theme colors]
+    P --> Q[Add tooltips & legends]
+    Q --> R[Enable interactions]
+
+    subgraph "Interactive Features"
+        S[Hover: Show data point]
+        T[Click: Drill down]
+        U[Zoom: Date range]
+        V[Filter: By segment]
+    end
+```
+
+### 23.4 At-Risk Student Detection Flow
+
+```mermaid
+flowchart TD
+    A[Cron or API request] --> B[GET /api/courses/{id}/analytics?type=at-risk]
+
+    B --> C[For each enrolled student]
+    C --> D[Calculate risk factors]
+
+    D --> E[Factor 1: Days since last activity]
+    D --> F[Factor 2: Progress vs cohort average]
+    D --> G[Factor 3: Quiz performance trend]
+    D --> H[Factor 4: Assignment submission rate]
+    D --> I[Factor 5: Login frequency]
+
+    E --> J{> 7 days inactive?}
+    J -->|Yes| K[Add 30 risk points]
+
+    F --> L{< 50% of average?}
+    L -->|Yes| M[Add 25 risk points]
+
+    G --> N{Declining trend?}
+    N -->|Yes| O[Add 20 risk points]
+
+    H --> P{< 80% submitted?}
+    P -->|Yes| Q[Add 15 risk points]
+
+    I --> R{< 2 logins/week?}
+    R -->|Yes| S[Add 10 risk points]
+
+    K & M & O & Q & S --> T[Sum risk score]
+    T --> U{Score >= 50?}
+    U -->|Yes| V[Flag as AT_RISK]
+    U -->|No| W[Flag as NORMAL]
+
+    V --> X[Include in dashboard alert]
+    X --> Y[Suggest intervention actions]
+```
+
+---
+
+## 24. Webhooks & API Key Flows
+
+### 24.1 Webhook Registration & Delivery Flow
+
+```mermaid
+flowchart TD
+    A[Admin/Developer: Create webhook] --> B[POST /api/webhooks]
+    B --> C[Validate URL is HTTPS]
+    C --> D[Generate HMAC secret]
+    D --> E[Create Webhook record]
+    E --> F[Store events to subscribe]
+
+    subgraph "Event Types"
+        G[enrollment.created]
+        H[course.published]
+        I[quiz.completed]
+        J[assignment.submitted]
+        K[certificate.issued]
+        L[user.created]
+        M[grade.updated]
+    end
+
+    subgraph "Event Trigger"
+        N[System event occurs] --> O[Check subscribed webhooks]
+        O --> P[For each matching webhook]
+        P --> Q[Build payload JSON]
+        Q --> R[Sign with HMAC-SHA256]
+        R --> S[POST to webhook URL]
+    end
+
+    S --> T{Response status?}
+    T -->|2xx| U[Create WebhookDelivery: SUCCESS]
+    T -->|4xx/5xx| V[Create WebhookDelivery: FAILED]
+    T -->|Timeout| W[Create WebhookDelivery: TIMEOUT]
+
+    V & W --> X{Retry count < 5?}
+    X -->|Yes| Y[Schedule retry with backoff]
+    X -->|No| Z[Mark as EXHAUSTED]
+
+    Y --> AA[Wait: 1min, 5min, 30min, 2hr, 24hr]
+    AA --> S
+```
+
+### 24.2 Webhook Delivery Sequence with Retry
+
+```mermaid
+sequenceDiagram
+    participant Event as System Event
+    participant Dispatcher as Webhook Dispatcher
+    participant DB as Database
+    participant External as External URL
+    participant Queue as Retry Queue
+
+    Event->>Dispatcher: Event triggered (e.g., enrollment.created)
+    Dispatcher->>DB: Find webhooks subscribed to event
+    DB-->>Dispatcher: [webhook1, webhook2]
+
+    loop For each webhook
+        Dispatcher->>Dispatcher: Build JSON payload
+        Dispatcher->>Dispatcher: Generate timestamp
+        Dispatcher->>Dispatcher: Create HMAC signature
+        Note over Dispatcher: signature = HMAC-SHA256(secret, timestamp.payload)
+
+        Dispatcher->>External: POST with headers
+        Note over External: X-Webhook-Signature: {signature}<br/>X-Webhook-Timestamp: {timestamp}<br/>Content-Type: application/json
+
+        alt Success (2xx)
+            External-->>Dispatcher: 200 OK
+            Dispatcher->>DB: Create WebhookDelivery (SUCCESS)
+        else Failure
+            External-->>Dispatcher: 500 / Timeout
+            Dispatcher->>DB: Create WebhookDelivery (FAILED, attempt: 1)
+            Dispatcher->>Queue: Schedule retry
+
+            loop Retry with exponential backoff
+                Queue->>Dispatcher: Retry attempt
+                Dispatcher->>External: POST again
+                alt Success
+                    External-->>Dispatcher: 200 OK
+                    Dispatcher->>DB: Update delivery (SUCCESS)
+                else Still failing & attempts < 5
+                    Dispatcher->>Queue: Schedule next retry
+                    Note over Queue: Backoff: 1m → 5m → 30m → 2h → 24h
+                else Attempts exhausted
+                    Dispatcher->>DB: Update delivery (EXHAUSTED)
+                end
+            end
+        end
+    end
+```
+
+### 24.3 API Key Authentication Flow
+
+```mermaid
+flowchart TD
+    A[Developer: Create API key] --> B[POST /api/api-keys]
+    B --> C[Generate random key: civlabs_sk_xxx]
+    C --> D[Hash key with SHA-256]
+    D --> E[Store hash + metadata in DB]
+    E --> F[Return plain key ONCE]
+    F --> G[Developer saves key securely]
+
+    subgraph "API Request with Key"
+        H[Client: Make API request] --> I[Add header: Authorization: Bearer {key}]
+        I --> J[Request hits API route]
+        J --> K[apiKeyAuth middleware]
+        K --> L[Extract key from header]
+        L --> M[Hash the provided key]
+        M --> N[Query DB for matching hash]
+
+        N --> O{Key found?}
+        O -->|No| P[Return 401 Unauthorized]
+        O -->|Yes| Q{Key expired?}
+        Q -->|Yes| R[Return 401 Key expired]
+        Q -->|No| S{Rate limit OK?}
+        S -->|No| T[Return 429 Rate limited]
+        S -->|Yes| U{Permission check}
+        U -->|Denied| V[Return 403 Forbidden]
+        U -->|Allowed| W[Process request]
+        W --> X[Update lastUsedAt]
+        X --> Y[Return response]
+    end
+```
+
+### 24.4 API Key Permission Model
+
+```mermaid
+flowchart TD
+    subgraph "API Key Permissions"
+        A[APIKey record] --> B[permissions: JSON array]
+        B --> C[Resource-level access]
+    end
+
+    C --> D{Permission types}
+    D --> E[courses:read]
+    D --> F[courses:write]
+    D --> G[enrollments:read]
+    D --> H[enrollments:write]
+    D --> I[users:read]
+    D --> J[analytics:read]
+    D --> K[webhooks:manage]
+
+    subgraph "Permission Check"
+        L[Incoming request] --> M{Endpoint?}
+        M -->|GET /api/courses| N[Requires: courses:read]
+        M -->|POST /api/courses| O[Requires: courses:write]
+        M -->|GET /api/analytics| P[Requires: analytics:read]
+
+        N & O & P --> Q[Check key.permissions includes required]
+        Q -->|Yes| R[Allow request]
+        Q -->|No| S[403 Forbidden]
+    end
+
+    subgraph "Rate Limiting"
+        T[Per-key limit: 60 req/min]
+        U[Sliding window in Redis]
+        V[X-RateLimit-Remaining header]
+    end
+```
+
+### 24.5 Webhook & API Key State Diagrams
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active : Webhook created
+
+    Active --> Active : Successful deliveries
+    Active --> Degraded : Multiple failures
+    Degraded --> Active : Successful delivery
+    Degraded --> Disabled : Too many failures
+    Disabled --> Active : Admin re-enables
+    Active --> Deleted : Admin deletes
+
+    state "Delivery States" as Delivery {
+        [*] --> Pending
+        Pending --> Success : 2xx response
+        Pending --> Failed : 4xx/5xx response
+        Failed --> Retrying : Retry scheduled
+        Retrying --> Success : Retry succeeds
+        Retrying --> Failed : Retry fails
+        Failed --> Exhausted : Max retries reached
+    }
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active : API key created
+
+    Active --> Active : Successful requests
+    Active --> RateLimited : Exceeded 60/min
+    RateLimited --> Active : Window resets
+
+    Active --> Expired : expiresAt reached
+    Expired --> [*] : Cannot be reactivated
+
+    Active --> Revoked : Admin revokes
+    Revoked --> [*] : Cannot be reactivated
+
+    state "Usage Tracking" as Usage {
+        LastUsedAt : Timestamp
+        RequestCount : Total requests
+        FailedCount : Auth failures
+    }
 ```
 
 ---
