@@ -112,7 +112,7 @@ erDiagram
         string title
         string description
         int passingScore
-        string chapterId FK UK
+        string chapterId FK
         string assessmentType
         int timeLimit
         int attemptLimit
@@ -261,7 +261,7 @@ erDiagram
 
     ChatRoom {
         string id PK
-        string courseId FK UK
+        string courseId FK
         datetime createdAt
     }
 
@@ -279,7 +279,7 @@ erDiagram
 
     NotificationPreference {
         string id PK
-        string userId FK UK
+        string userId FK
         boolean emailEnrollment
         boolean emailCourseUpdates
         boolean emailCertificates
@@ -311,7 +311,7 @@ erDiagram
     CalendarToken {
         string id PK
         string token UK
-        string userId FK UK
+        string userId FK
         datetime createdAt
     }
 
@@ -502,7 +502,7 @@ erDiagram
         string title
         string description
         int passingScore
-        string chapterId FK UK
+        string chapterId FK
         string assessmentType
         int timeLimit
         int attemptLimit
@@ -800,7 +800,7 @@ erDiagram
 
     ChatRoom {
         string id PK
-        string courseId FK UK
+        string courseId FK
         datetime createdAt
     }
 
@@ -996,7 +996,7 @@ erDiagram
 
     MFAConfig {
         string id PK
-        string userId FK UK
+        string userId FK
         string method
         boolean isEnabled
         json backupCodes
@@ -1019,7 +1019,7 @@ erDiagram
 
     CourseApproval {
         string id PK
-        string courseId FK UK
+        string courseId FK
         string status
         datetime submittedAt
         string reviewedBy
