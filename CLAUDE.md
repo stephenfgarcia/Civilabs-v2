@@ -183,7 +183,7 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 
 ### Sprint Planning
 - **Ask questions first**: Before starting a sprint or major feature, ask clarifying questions (mix of multiple choice and open-ended)
-- **Explain features**: After completing each feature, explain what was built and document in DEVELOPMENT_PLAN.md
+- **Explain features**: After completing each feature, explain what was built and document in docs/development/08-CHANGELOG.md
 - **Deferred items**: Occasionally remind about deferred items (SAML, SCORM, Peer Review, etc.) when relevant
 
 ### Development Cycle
@@ -205,10 +205,10 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
   ```
 
 ### Documentation
-- **Update DEVELOPMENT_PLAN.md**: Always update after completing each sprint with:
-  - Progress tracker row
-  - Sprint section with feature table and key files
-  - Update log entry
+- **Update documentation**: Always update after completing each sprint:
+  - Progress tracker in docs/development/01-PROGRESS.md
+  - Phase/sprint section in relevant docs/development/ file
+  - Update log entry in docs/development/08-CHANGELOG.md
 
 ### Scope & Decision Making
 - **Related improvements**: If I notice a related improvement or small bug during a feature, note it and ask if you want it included
@@ -217,7 +217,7 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 - **Dependencies**: Add new npm packages if clearly needed for the feature
 
 ### Session Routine
-- **Session start**: Automatically read CLAUDE.md + DEVELOPMENT_PLAN.md when starting a new chat
+- **Session start**: Automatically read CLAUDE.md + DEVELOPMENT_PLAN.md (index) when starting a new chat
 - **Progress updates**: Give status update after each feature completes
 - **Context management**: Summarize completed work periodically to free up context in long sessions
 
@@ -235,7 +235,7 @@ UI components use shadcn/ui pattern with Radix primitives and Tailwind. Base com
 
 ### Code Review & Maintenance
 - **Self-review**: Ask user to review critical sections before committing
-- **Technical debt**: Fix if small, note in DEVELOPMENT_PLAN.md as deferred item if large
+- **Technical debt**: Fix if small, note in docs/development/05-PHASES-COMPETE.md as deferred item if large
 - **Breaking changes**: Always ask before making breaking API changes
 - **Dependency updates**: Flag outdated/vulnerable dependencies and ask before updating
 
