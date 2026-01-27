@@ -19,350 +19,350 @@ This section shows all entities that students directly interact with during thei
 ```mermaid
 erDiagram
     User {
-        String id PK
-        String name
-        String email UK
-        DateTime emailVerified
-        String image
-        String password
-        UserRole role
-        String bio
-        Boolean profileVisibility
-        Boolean mfaEnabled
-        DateTime consentAcceptedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string email UK
+        datetime emailVerified
+        string image
+        string password
+        string role
+        string bio
+        boolean profileVisibility
+        boolean mfaEnabled
+        datetime consentAcceptedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     Course {
-        String id PK
-        String title
-        String slug UK
-        String description
-        String imageUrl
-        Boolean isPublished
-        String instructorId FK
-        String categoryId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string slug UK
+        string description
+        string imageUrl
+        boolean isPublished
+        string instructorId FK
+        string categoryId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     Chapter {
-        String id PK
-        String title
-        String description
-        Int position
-        Boolean isPublished
-        Boolean isFree
-        String courseId FK
-        DateTime availableFrom
-        DateTime availableUntil
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        int position
+        boolean isPublished
+        boolean isFree
+        string courseId FK
+        datetime availableFrom
+        datetime availableUntil
+        datetime createdAt
+        datetime updatedAt
     }
 
     Lesson {
-        String id PK
-        String title
-        String description
-        LessonType type
-        String content
-        String videoUrl
-        String attachmentUrl
-        Json sceneConfig
-        Int position
-        Int duration
-        String chapterId FK
-        DateTime availableFrom
-        DateTime availableUntil
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        string type
+        string content
+        string videoUrl
+        string attachmentUrl
+        json sceneConfig
+        int position
+        int duration
+        string chapterId FK
+        datetime availableFrom
+        datetime availableUntil
+        datetime createdAt
+        datetime updatedAt
     }
 
     Enrollment {
-        String id PK
-        String userId FK
-        String courseId FK
-        DateTime completedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string courseId FK
+        datetime completedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     UserProgress {
-        String id PK
-        String userId FK
-        String lessonId FK
-        Boolean isCompleted
-        DateTime completedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string lessonId FK
+        boolean isCompleted
+        datetime completedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     Certificate {
-        String id PK
-        String uniqueCode UK
-        String userId FK
-        String courseId FK
-        DateTime issuedAt
-        String pdfUrl
+        string id PK
+        string uniqueCode UK
+        string userId FK
+        string courseId FK
+        datetime issuedAt
+        string pdfUrl
     }
 
     Quiz {
-        String id PK
-        String title
-        String description
-        Int passingScore
-        String chapterId FK UK
-        AssessmentType assessmentType
-        Int timeLimit
-        Int attemptLimit
-        DateTime availableFrom
-        DateTime availableUntil
-        Boolean shuffleQuestions
-        Boolean shuffleOptions
-        String showAnswersAfter
-        Boolean isProctored
-        String passwordProtected
-        Boolean honorCodeRequired
-        Int poolSize
-        String questionBankId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        int passingScore
+        string chapterId FK UK
+        string assessmentType
+        int timeLimit
+        int attemptLimit
+        datetime availableFrom
+        datetime availableUntil
+        boolean shuffleQuestions
+        boolean shuffleOptions
+        string showAnswersAfter
+        boolean isProctored
+        string passwordProtected
+        boolean honorCodeRequired
+        int poolSize
+        string questionBankId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     QuizAttempt {
-        String id PK
-        String userId FK
-        String quizId FK
-        Int score
-        Boolean passed
-        Json answers
-        DateTime completedAt
-        DateTime startedAt
-        Int timeSpentSeconds
-        Boolean isLate
-        Boolean honorCodeAccepted
-        String ipAddress
-        Json questionsServed
-        Int earnedPoints
-        Int totalPoints
-        Boolean needsManualGrading
-        DateTime manualGradedAt
-        String manualGradedBy
+        string id PK
+        string userId FK
+        string quizId FK
+        int score
+        boolean passed
+        json answers
+        datetime completedAt
+        datetime startedAt
+        int timeSpentSeconds
+        boolean isLate
+        boolean honorCodeAccepted
+        string ipAddress
+        json questionsServed
+        int earnedPoints
+        int totalPoints
+        boolean needsManualGrading
+        datetime manualGradedAt
+        string manualGradedBy
     }
 
     Assignment {
-        String id PK
-        String title
-        String description
-        AssignmentType type
-        String courseId FK
-        String chapterId FK
-        DateTime dueDate
-        Int points
-        Boolean isPublished
-        Int position
-        String allowedFileTypes
-        Int maxFileSize
-        Int maxSubmissions
-        LatePolicy latePolicy
-        Int latePenaltyPercent
-        DateTime availableFrom
-        DateTime availableUntil
-        String rubricId FK
-        Boolean isGroupAssignment
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        string type
+        string courseId FK
+        string chapterId FK
+        datetime dueDate
+        int points
+        boolean isPublished
+        int position
+        string allowedFileTypes
+        int maxFileSize
+        int maxSubmissions
+        string latePolicy
+        int latePenaltyPercent
+        datetime availableFrom
+        datetime availableUntil
+        string rubricId FK
+        boolean isGroupAssignment
+        datetime createdAt
+        datetime updatedAt
     }
 
     AssignmentSubmission {
-        String id PK
-        String assignmentId FK
-        String userId FK
-        SubmissionStatus status
-        Int submissionNumber
-        String groupId FK
-        String fileUrl
-        String fileName
-        Int fileSize
-        String textContent
-        String urlLink
-        Float grade
-        String feedback
-        Json rubricScores
-        DateTime gradedAt
-        String gradedBy
-        DateTime submittedAt
-        Boolean isLate
-        Float latePenaltyApplied
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string assignmentId FK
+        string userId FK
+        string status
+        int submissionNumber
+        string groupId FK
+        string fileUrl
+        string fileName
+        int fileSize
+        string textContent
+        string urlLink
+        float grade
+        string feedback
+        json rubricScores
+        datetime gradedAt
+        string gradedBy
+        datetime submittedAt
+        boolean isLate
+        float latePenaltyApplied
+        datetime createdAt
+        datetime updatedAt
     }
 
     Bookmark {
-        String id PK
-        String userId FK
-        String lessonId FK
-        String note
-        DateTime createdAt
+        string id PK
+        string userId FK
+        string lessonId FK
+        string note
+        datetime createdAt
     }
 
     Note {
-        String id PK
-        String userId FK
-        String lessonId FK
-        String content
-        Int timestamp
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string lessonId FK
+        string content
+        int timestamp
+        datetime createdAt
+        datetime updatedAt
     }
 
     CourseReview {
-        String id PK
-        String userId FK
-        String courseId FK
-        Int rating
-        String title
-        String content
-        Boolean isPublic
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string courseId FK
+        int rating
+        string title
+        string content
+        boolean isPublic
+        datetime createdAt
+        datetime updatedAt
     }
 
     ForumThread {
-        String id PK
-        String title
-        String content
-        String userId FK
-        String categoryId FK
-        Boolean isPinned
-        Boolean isLocked
-        Int views
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string content
+        string userId FK
+        string categoryId FK
+        boolean isPinned
+        boolean isLocked
+        int views
+        datetime createdAt
+        datetime updatedAt
     }
 
     ForumReply {
-        String id PK
-        String content
-        String userId FK
-        String threadId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string content
+        string userId FK
+        string threadId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     Message {
-        String id PK
-        String content
-        String userId FK
-        String roomId FK
-        DateTime createdAt
+        string id PK
+        string content
+        string userId FK
+        string roomId FK
+        datetime createdAt
     }
 
     ChatRoom {
-        String id PK
-        String courseId FK UK
-        DateTime createdAt
+        string id PK
+        string courseId FK UK
+        datetime createdAt
     }
 
     Notification {
-        String id PK
-        NotificationType type
-        String title
-        String message
-        Boolean read
-        String userId FK
-        String link
-        Json metadata
-        DateTime createdAt
+        string id PK
+        string type
+        string title
+        string message
+        boolean read
+        string userId FK
+        string link
+        json metadata
+        datetime createdAt
     }
 
     NotificationPreference {
-        String id PK
-        String userId FK UK
-        Boolean emailEnrollment
-        Boolean emailCourseUpdates
-        Boolean emailCertificates
-        Boolean emailQuizResults
-        Boolean emailForumReplies
-        Boolean emailAnnouncements
-        Boolean emailChatMentions
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK UK
+        boolean emailEnrollment
+        boolean emailCourseUpdates
+        boolean emailCertificates
+        boolean emailQuizResults
+        boolean emailForumReplies
+        boolean emailAnnouncements
+        boolean emailChatMentions
+        datetime createdAt
+        datetime updatedAt
     }
 
     CalendarEvent {
-        String id PK
-        String title
-        String description
-        DateTime startDate
-        DateTime endDate
-        Boolean allDay
-        CalendarEventType type
-        String color
-        String courseId FK
-        String userId FK
-        String referenceType
-        String referenceId
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        datetime startDate
+        datetime endDate
+        boolean allDay
+        string type
+        string color
+        string courseId FK
+        string userId FK
+        string referenceType
+        string referenceId
+        datetime createdAt
+        datetime updatedAt
     }
 
     CalendarToken {
-        String id PK
-        String token UK
-        String userId FK UK
-        DateTime createdAt
+        string id PK
+        string token UK
+        string userId FK UK
+        datetime createdAt
     }
 
     GroupMember {
-        String id PK
-        String groupId FK
-        String userId FK
-        GroupRole role
-        DateTime joinedAt
+        string id PK
+        string groupId FK
+        string userId FK
+        string role
+        datetime joinedAt
     }
 
     CourseGroup {
-        String id PK
-        String name
-        String courseId FK
-        Int maxMembers
-        String createdBy
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string courseId FK
+        int maxMembers
+        string createdBy
+        datetime createdAt
+        datetime updatedAt
     }
 
     LearningPath {
-        String id PK
-        String title
-        String slug UK
-        String description
-        String imageUrl
-        Boolean isPublished
-        Int position
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string slug UK
+        string description
+        string imageUrl
+        boolean isPublished
+        int position
+        datetime createdAt
+        datetime updatedAt
     }
 
     LearningPathEnrollment {
-        String id PK
-        String userId FK
-        String learningPathId FK
-        DateTime startedAt
-        DateTime completedAt
+        string id PK
+        string userId FK
+        string learningPathId FK
+        datetime startedAt
+        datetime completedAt
     }
 
     ConsentRecord {
-        String id PK
-        String userId FK
-        ConsentType consentType
-        Boolean granted
-        DateTime grantedAt
-        DateTime revokedAt
-        String ipAddress
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string consentType
+        boolean granted
+        datetime grantedAt
+        datetime revokedAt
+        string ipAddress
+        datetime createdAt
+        datetime updatedAt
     }
 
     %% Core Learning Relationships
@@ -429,418 +429,418 @@ This section shows all entities that instructors create, manage, and monitor.
 ```mermaid
 erDiagram
     User {
-        String id PK
-        String name
-        String email UK
-        DateTime emailVerified
-        String image
-        String password
-        UserRole role
-        String bio
-        Boolean profileVisibility
-        Boolean mfaEnabled
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string email UK
+        datetime emailVerified
+        string image
+        string password
+        string role
+        string bio
+        boolean profileVisibility
+        boolean mfaEnabled
+        datetime createdAt
+        datetime updatedAt
     }
 
     Course {
-        String id PK
-        String title
-        String slug UK
-        String description
-        String imageUrl
-        Boolean isPublished
-        Boolean autoGradeSync
-        String instructorId FK
-        String categoryId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string slug UK
+        string description
+        string imageUrl
+        boolean isPublished
+        boolean autoGradeSync
+        string instructorId FK
+        string categoryId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     Category {
-        String id PK
-        String name UK
-        String slug UK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name UK
+        string slug UK
+        datetime createdAt
+        datetime updatedAt
     }
 
     Chapter {
-        String id PK
-        String title
-        String description
-        Int position
-        Boolean isPublished
-        Boolean isFree
-        String courseId FK
-        DateTime availableFrom
-        DateTime availableUntil
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        int position
+        boolean isPublished
+        boolean isFree
+        string courseId FK
+        datetime availableFrom
+        datetime availableUntil
+        datetime createdAt
+        datetime updatedAt
     }
 
     Lesson {
-        String id PK
-        String title
-        String description
-        LessonType type
-        String content
-        String videoUrl
-        String attachmentUrl
-        Json sceneConfig
-        Int position
-        Int duration
-        String chapterId FK
-        DateTime availableFrom
-        DateTime availableUntil
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        string type
+        string content
+        string videoUrl
+        string attachmentUrl
+        json sceneConfig
+        int position
+        int duration
+        string chapterId FK
+        datetime availableFrom
+        datetime availableUntil
+        datetime createdAt
+        datetime updatedAt
     }
 
     Quiz {
-        String id PK
-        String title
-        String description
-        Int passingScore
-        String chapterId FK UK
-        AssessmentType assessmentType
-        Int timeLimit
-        Int attemptLimit
-        DateTime availableFrom
-        DateTime availableUntil
-        Boolean shuffleQuestions
-        Boolean shuffleOptions
-        String showAnswersAfter
-        Boolean isProctored
-        String passwordProtected
-        Json ipRestrictions
-        Boolean honorCodeRequired
-        Int lateGracePeriod
-        String lateSubmissionPolicy
-        Int latePenaltyPercent
-        Int poolSize
-        String questionBankId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        int passingScore
+        string chapterId FK UK
+        string assessmentType
+        int timeLimit
+        int attemptLimit
+        datetime availableFrom
+        datetime availableUntil
+        boolean shuffleQuestions
+        boolean shuffleOptions
+        string showAnswersAfter
+        boolean isProctored
+        string passwordProtected
+        json ipRestrictions
+        boolean honorCodeRequired
+        int lateGracePeriod
+        string lateSubmissionPolicy
+        int latePenaltyPercent
+        int poolSize
+        string questionBankId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     Question {
-        String id PK
-        String text
-        QuestionType type
-        Json options
-        Int correctAnswer
-        Int points
-        Int position
-        String quizId FK
-        String explanation
-        Json acceptedAnswers
-        Json matchingPairs
-        Json orderingItems
-        Boolean correctBoolAnswer
-        Json blanks
-        Json multiSelectAnswers
-        Boolean partialCreditEnabled
-        Int essayWordLimit
-        String essayRubricId
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string text
+        string type
+        json options
+        int correctAnswer
+        int points
+        int position
+        string quizId FK
+        string explanation
+        json acceptedAnswers
+        json matchingPairs
+        json orderingItems
+        boolean correctBoolAnswer
+        json blanks
+        json multiSelectAnswers
+        boolean partialCreditEnabled
+        int essayWordLimit
+        string essayRubricId
+        datetime createdAt
+        datetime updatedAt
     }
 
     QuestionBank {
-        String id PK
-        String title
-        String description
-        String courseId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        string courseId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     QuestionBankItem {
-        String id PK
-        String questionBankId FK
-        String questionId FK
-        Int position
-        DateTime createdAt
+        string id PK
+        string questionBankId FK
+        string questionId FK
+        int position
+        datetime createdAt
     }
 
     Assignment {
-        String id PK
-        String title
-        String description
-        AssignmentType type
-        String courseId FK
-        String chapterId FK
-        DateTime dueDate
-        Int points
-        Boolean isPublished
-        Int position
-        String allowedFileTypes
-        Int maxFileSize
-        Int maxSubmissions
-        LatePolicy latePolicy
-        Int latePenaltyPercent
-        DateTime availableFrom
-        DateTime availableUntil
-        String rubricId FK
-        Boolean isGroupAssignment
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        string type
+        string courseId FK
+        string chapterId FK
+        datetime dueDate
+        int points
+        boolean isPublished
+        int position
+        string allowedFileTypes
+        int maxFileSize
+        int maxSubmissions
+        string latePolicy
+        int latePenaltyPercent
+        datetime availableFrom
+        datetime availableUntil
+        string rubricId FK
+        boolean isGroupAssignment
+        datetime createdAt
+        datetime updatedAt
     }
 
     AssignmentSubmission {
-        String id PK
-        String assignmentId FK
-        String userId FK
-        SubmissionStatus status
-        Int submissionNumber
-        String groupId FK
-        String fileUrl
-        String fileName
-        Int fileSize
-        String textContent
-        String urlLink
-        Float grade
-        String feedback
-        Json rubricScores
-        DateTime gradedAt
-        String gradedBy
-        DateTime submittedAt
-        Boolean isLate
-        Float latePenaltyApplied
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string assignmentId FK
+        string userId FK
+        string status
+        int submissionNumber
+        string groupId FK
+        string fileUrl
+        string fileName
+        int fileSize
+        string textContent
+        string urlLink
+        float grade
+        string feedback
+        json rubricScores
+        datetime gradedAt
+        string gradedBy
+        datetime submittedAt
+        boolean isLate
+        float latePenaltyApplied
+        datetime createdAt
+        datetime updatedAt
     }
 
     SubmissionComment {
-        String id PK
-        String submissionId FK
-        String authorId FK
-        String content
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string submissionId FK
+        string authorId FK
+        string content
+        datetime createdAt
+        datetime updatedAt
     }
 
     SubmissionAnnotation {
-        String id PK
-        String submissionId FK
-        String authorId FK
-        Int startOffset
-        Int endOffset
-        String content
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string submissionId FK
+        string authorId FK
+        int startOffset
+        int endOffset
+        string content
+        datetime createdAt
+        datetime updatedAt
     }
 
     Rubric {
-        String id PK
-        String title
-        String description
-        String courseId FK
-        Boolean isTemplate
-        String createdBy
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        string courseId FK
+        boolean isTemplate
+        string createdBy
+        datetime createdAt
+        datetime updatedAt
     }
 
     RubricCriterion {
-        String id PK
-        String rubricId FK
-        String title
-        String description
-        Int position
-        Int maxPoints
-        Json levels
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string rubricId FK
+        string title
+        string description
+        int position
+        int maxPoints
+        json levels
+        datetime createdAt
+        datetime updatedAt
     }
 
     GradeCategory {
-        String id PK
-        String name
-        Float weight
-        String courseId FK
-        Int position
-        Int dropLowest
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        float weight
+        string courseId FK
+        int position
+        int dropLowest
+        datetime createdAt
+        datetime updatedAt
     }
 
     GradeItem {
-        String id PK
-        String categoryId FK
-        String title
-        Float points
-        GradeItemType type
-        String referenceId
-        Boolean isExtraCredit
-        Boolean isVisible
-        DateTime dueDate
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string categoryId FK
+        string title
+        float points
+        string type
+        string referenceId
+        boolean isExtraCredit
+        boolean isVisible
+        datetime dueDate
+        datetime createdAt
+        datetime updatedAt
     }
 
     StudentGrade {
-        String id PK
-        String gradeItemId FK
-        String userId FK
-        Float score
-        String letterGrade
-        Float overrideScore
-        String overrideBy
-        String overrideReason
-        DateTime gradedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string gradeItemId FK
+        string userId FK
+        float score
+        string letterGrade
+        float overrideScore
+        string overrideBy
+        string overrideReason
+        datetime gradedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     GradingScale {
-        String id PK
-        String name
-        String courseId FK
-        Boolean isDefault
-        Json levels
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string courseId FK
+        boolean isDefault
+        json levels
+        datetime createdAt
+        datetime updatedAt
     }
 
     ReleaseCondition {
-        String id PK
-        String targetType
-        String targetId
-        String courseId FK
-        String conditionType
-        Json conditionValue
-        String operator
-        Int position
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string targetType
+        string targetId
+        string courseId FK
+        string conditionType
+        json conditionValue
+        string operator
+        int position
+        datetime createdAt
+        datetime updatedAt
     }
 
     Announcement {
-        String id PK
-        String title
-        String content
-        String courseId FK
-        String authorId FK
-        Boolean isPinned
-        Boolean isPublished
-        DateTime publishedAt
-        DateTime scheduledFor
-        String attachmentUrl
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string content
+        string courseId FK
+        string authorId FK
+        boolean isPinned
+        boolean isPublished
+        datetime publishedAt
+        datetime scheduledFor
+        string attachmentUrl
+        datetime createdAt
+        datetime updatedAt
     }
 
     AttendanceSession {
-        String id PK
-        String courseId FK
-        DateTime date
-        String title
-        String type
-        String notes
-        String createdBy
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string courseId FK
+        datetime date
+        string title
+        string type
+        string notes
+        string createdBy
+        datetime createdAt
+        datetime updatedAt
     }
 
     AttendanceRecord {
-        String id PK
-        String sessionId FK
-        String userId FK
-        AttendanceStatus status
-        String notes
-        DateTime markedAt
-        String markedBy
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string sessionId FK
+        string userId FK
+        string status
+        string notes
+        datetime markedAt
+        string markedBy
+        datetime createdAt
+        datetime updatedAt
     }
 
     UserActivity {
-        String id PK
-        String userId FK
-        String courseId FK
-        String lessonId FK
-        String eventType
-        Json metadata
-        String sessionId
-        DateTime timestamp
+        string id PK
+        string userId FK
+        string courseId FK
+        string lessonId FK
+        string eventType
+        json metadata
+        string sessionId
+        datetime timestamp
     }
 
     Media {
-        String id PK
-        String name
-        String url
-        MediaType type
-        Int size
-        String mimeType
-        String userId FK
-        String courseId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string url
+        string type
+        int size
+        string mimeType
+        string userId FK
+        string courseId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     CourseGroup {
-        String id PK
-        String name
-        String courseId FK
-        Int maxMembers
-        String createdBy
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string courseId FK
+        int maxMembers
+        string createdBy
+        datetime createdAt
+        datetime updatedAt
     }
 
     GroupMember {
-        String id PK
-        String groupId FK
-        String userId FK
-        GroupRole role
-        DateTime joinedAt
+        string id PK
+        string groupId FK
+        string userId FK
+        string role
+        datetime joinedAt
     }
 
     ChatRoom {
-        String id PK
-        String courseId FK UK
-        DateTime createdAt
+        string id PK
+        string courseId FK UK
+        datetime createdAt
     }
 
     CalendarEvent {
-        String id PK
-        String title
-        String description
-        DateTime startDate
-        DateTime endDate
-        Boolean allDay
-        CalendarEventType type
-        String color
-        String courseId FK
-        String userId FK
-        String referenceType
-        String referenceId
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string description
+        datetime startDate
+        datetime endDate
+        boolean allDay
+        string type
+        string color
+        string courseId FK
+        string userId FK
+        string referenceType
+        string referenceId
+        datetime createdAt
+        datetime updatedAt
     }
 
     Enrollment {
-        String id PK
-        String userId FK
-        String courseId FK
-        DateTime completedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string courseId FK
+        datetime completedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     QuizAttempt {
-        String id PK
-        String userId FK
-        String quizId FK
-        Int score
-        Boolean passed
-        Json answers
-        DateTime completedAt
-        Boolean needsManualGrading
-        DateTime manualGradedAt
-        String manualGradedBy
+        string id PK
+        string userId FK
+        string quizId FK
+        int score
+        boolean passed
+        json answers
+        datetime completedAt
+        boolean needsManualGrading
+        datetime manualGradedAt
+        string manualGradedBy
     }
 
     %% Course Structure
@@ -912,275 +912,275 @@ This section shows all entities that administrators manage for platform-wide ope
 ```mermaid
 erDiagram
     User {
-        String id PK
-        String name
-        String email UK
-        DateTime emailVerified
-        String image
-        String password
-        UserRole role
-        String bio
-        Boolean profileVisibility
-        Boolean mfaEnabled
-        DateTime consentAcceptedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string email UK
+        datetime emailVerified
+        string image
+        string password
+        string role
+        string bio
+        boolean profileVisibility
+        boolean mfaEnabled
+        datetime consentAcceptedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     Account {
-        String id PK
-        String userId FK
-        String type
-        String provider
-        String providerAccountId
-        String refresh_token
-        String access_token
-        Int expires_at
-        String token_type
-        String scope
-        String id_token
-        String session_state
+        string id PK
+        string userId FK
+        string type
+        string provider
+        string providerAccountId
+        string refresh_token
+        string access_token
+        int expires_at
+        string token_type
+        string scope
+        string id_token
+        string session_state
     }
 
     Session {
-        String id PK
-        String sessionToken UK
-        String userId FK
-        DateTime expires
+        string id PK
+        string sessionToken UK
+        string userId FK
+        datetime expires
     }
 
     AuditLog {
-        String id PK
-        AuditAction action
-        String userId FK
-        String targetId
-        String targetType
-        String ipAddress
-        String userAgent
-        Json details
-        DateTime createdAt
+        string id PK
+        string action
+        string userId FK
+        string targetId
+        string targetType
+        string ipAddress
+        string userAgent
+        json details
+        datetime createdAt
     }
 
     PlatformSettings {
-        String id PK
-        Boolean registrationOpen
-        UserRole defaultRole
-        Boolean maintenanceMode
-        String platformName
-        String platformDescription
-        Int maxFileUploadSize
-        String allowedFileTypes
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        boolean registrationOpen
+        string defaultRole
+        boolean maintenanceMode
+        string platformName
+        string platformDescription
+        int maxFileUploadSize
+        string allowedFileTypes
+        datetime createdAt
+        datetime updatedAt
     }
 
     Category {
-        String id PK
-        String name UK
-        String slug UK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name UK
+        string slug UK
+        datetime createdAt
+        datetime updatedAt
     }
 
     ForumCategory {
-        String id PK
-        String name
-        String slug UK
-        String description
-        String icon
-        String color
-        Int position
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string name
+        string slug UK
+        string description
+        string icon
+        string color
+        int position
+        datetime createdAt
+        datetime updatedAt
     }
 
     MFAConfig {
-        String id PK
-        String userId FK UK
-        MFAMethod method
-        Boolean isEnabled
-        Json backupCodes
-        DateTime lastUsedAt
-        Int failedAttempts
-        DateTime lockedUntil
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK UK
+        string method
+        boolean isEnabled
+        json backupCodes
+        datetime lastUsedAt
+        int failedAttempts
+        datetime lockedUntil
+        datetime createdAt
+        datetime updatedAt
     }
 
     OTPToken {
-        String id PK
-        String userId FK
-        String code
-        DateTime expiresAt
-        DateTime usedAt
-        String purpose
-        DateTime createdAt
+        string id PK
+        string userId FK
+        string code
+        datetime expiresAt
+        datetime usedAt
+        string purpose
+        datetime createdAt
     }
 
     CourseApproval {
-        String id PK
-        String courseId FK UK
-        ApprovalStatus status
-        DateTime submittedAt
-        String reviewedBy
-        DateTime reviewedAt
-        String reviewComment
-        Json history
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string courseId FK UK
+        string status
+        datetime submittedAt
+        string reviewedBy
+        datetime reviewedAt
+        string reviewComment
+        json history
+        datetime createdAt
+        datetime updatedAt
     }
 
     Course {
-        String id PK
-        String title
-        String slug UK
-        String description
-        String imageUrl
-        Boolean isPublished
-        String instructorId FK
-        String categoryId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string slug UK
+        string description
+        string imageUrl
+        boolean isPublished
+        string instructorId FK
+        string categoryId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     EmailCampaign {
-        String id PK
-        String title
-        String subject
-        String content
-        Json recipientFilter
-        CampaignStatus status
-        DateTime sentAt
-        DateTime scheduledFor
-        String sentBy FK
-        Int sentCount
-        Int failedCount
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string subject
+        string content
+        json recipientFilter
+        string status
+        datetime sentAt
+        datetime scheduledFor
+        string sentBy FK
+        int sentCount
+        int failedCount
+        datetime createdAt
+        datetime updatedAt
     }
 
     RetentionPolicy {
-        String id PK
-        DataType dataType UK
-        Int retentionDays
-        RetentionAction action
-        Boolean isActive
-        DateTime lastExecutedAt
-        String description
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string dataType UK
+        int retentionDays
+        string action
+        boolean isActive
+        datetime lastExecutedAt
+        string description
+        datetime createdAt
+        datetime updatedAt
     }
 
     ConsentRecord {
-        String id PK
-        String userId FK
-        ConsentType consentType
-        Boolean granted
-        DateTime grantedAt
-        DateTime revokedAt
-        String ipAddress
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string consentType
+        boolean granted
+        datetime grantedAt
+        datetime revokedAt
+        string ipAddress
+        datetime createdAt
+        datetime updatedAt
     }
 
     Webhook {
-        String id PK
-        String url
-        String description
-        String secret
-        WebhookEvent[] events
-        Boolean isActive
-        String userId FK
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string url
+        string description
+        string secret
+        string events
+        boolean isActive
+        string userId FK
+        datetime createdAt
+        datetime updatedAt
     }
 
     WebhookDelivery {
-        String id PK
-        String webhookId FK
-        WebhookEvent event
-        Json payload
-        Int statusCode
-        String responseBody
-        Boolean success
-        Int attempts
-        Int maxAttempts
-        DateTime nextRetryAt
-        String error
-        DateTime deliveredAt
-        DateTime completedAt
+        string id PK
+        string webhookId FK
+        string event
+        json payload
+        int statusCode
+        string responseBody
+        boolean success
+        int attempts
+        int maxAttempts
+        datetime nextRetryAt
+        string error
+        datetime deliveredAt
+        datetime completedAt
     }
 
     APIKey {
-        String id PK
-        String name
-        String keyPrefix
-        String keyHash UK
-        APIKeyPermission[] permissions
-        String userId FK
-        Boolean isActive
-        DateTime expiresAt
-        DateTime lastUsedAt
-        DateTime createdAt
+        string id PK
+        string name
+        string keyPrefix
+        string keyHash UK
+        string permissions
+        string userId FK
+        boolean isActive
+        datetime expiresAt
+        datetime lastUsedAt
+        datetime createdAt
     }
 
     LearningPath {
-        String id PK
-        String title
-        String slug UK
-        String description
-        String imageUrl
-        Boolean isPublished
-        Int position
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string slug UK
+        string description
+        string imageUrl
+        boolean isPublished
+        int position
+        datetime createdAt
+        datetime updatedAt
     }
 
     LearningPathCourse {
-        String id PK
-        String learningPathId FK
-        String courseId FK
-        Int position
+        string id PK
+        string learningPathId FK
+        string courseId FK
+        int position
     }
 
     CoursePrerequisite {
-        String id PK
-        String courseId FK
-        String prerequisiteCourseId FK
+        string id PK
+        string courseId FK
+        string prerequisiteCourseId FK
     }
 
     ForumThread {
-        String id PK
-        String title
-        String content
-        String userId FK
-        String categoryId FK
-        Boolean isPinned
-        Boolean isLocked
-        Int views
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string title
+        string content
+        string userId FK
+        string categoryId FK
+        boolean isPinned
+        boolean isLocked
+        int views
+        datetime createdAt
+        datetime updatedAt
     }
 
     Notification {
-        String id PK
-        NotificationType type
-        String title
-        String message
-        Boolean read
-        String userId FK
-        String link
-        Json metadata
-        DateTime createdAt
+        string id PK
+        string type
+        string title
+        string message
+        boolean read
+        string userId FK
+        string link
+        json metadata
+        datetime createdAt
     }
 
     Enrollment {
-        String id PK
-        String userId FK
-        String courseId FK
-        DateTime completedAt
-        DateTime createdAt
-        DateTime updatedAt
+        string id PK
+        string userId FK
+        string courseId FK
+        datetime completedAt
+        datetime createdAt
+        datetime updatedAt
     }
 
     %% User Management
